@@ -13,7 +13,7 @@ import { styles } from "../styles/styles";
 import { CATEGORIES, TOWNS } from "../data/constants";
 import { BLANK_PRODUCT_DRAFT } from "../data/products";
 import { pname, townLabel, money } from "../utils/helpers";
-import { getOwnerToken, changeOwnerPassword } from "../utils/ownerAuth";
+import { getOwnerToken, changeOwnerPassword, changeOwnerUsername } from "../utils/ownerAuth";
 import LangToggle from "./LangToggle";
 import ContactBar from "./ContactBar";
 
@@ -500,15 +500,36 @@ export default function OwnerDashboard({
     if (newPassword !== confirmPassword) { setPwError(t.passwordMismatch); return; }
     if (!isStrongPassword(newPassword)) { setPwError(t.passwordTooShort); return; }
     setPwSaving(true);
-    const result = await changeOwnerPassword(currentPassword, newPassword);
+    const result = await changeOwnerPassword(currentPassword, newPassword, ownerToken);
     setPwSaving(false);
     if (!result.success) {
-      setPwError(result.reason === "too_short" ? t.passwordTooShort : t.incorrectCurrentPassword);
+      setPwError(result.error || t.incorrectCurrentPassword);
       return;
     }
     setCurrentPassword(""); setNewPassword(""); setConfirmPassword("");
     setPwSavedMsg(true);
     setTimeout(() => setPwSavedMsg(false), 2500);
+  };
+
+  const [newUn, setNewUn] = useState("");
+  const [unPwd, setUnPwd] = useState("");
+  const [unError, setUnError] = useState("");
+  const [unSavedMsg, setUnSavedMsg] = useState(false);
+  const [unSaving, setUnSaving] = useState(false);
+
+  const submitUsernameChange = async () => {
+    setUnError("");
+    if (!newUn.trim()) return;
+    setUnSaving(true);
+    const result = await changeOwnerUsername(newUn, unPwd, ownerToken);
+    setUnSaving(false);
+    if (!result.success) {
+      setUnError(result.error);
+      return;
+    }
+    setNewUn(""); setUnPwd("");
+    setUnSavedMsg(true);
+    setTimeout(() => setUnSavedMsg(false), 2500);
   };
 
   // ---- Stat card helper ----------------------------------------------------
@@ -1311,24 +1332,42 @@ export default function OwnerDashboard({
 
         {/* ---- ACCOUNT / PASSWORD TAB ---- */}
         {tab === "account" && (
-          <>
-            <h2 style={styles.sectionTitle}><KeyRound size={18} /> {t.changePasswordTitle}</h2>
-            <p style={{ color: "var(--ink-soft)", fontSize: 13.5, marginTop: -6 }}>{t.changePasswordSub}</p>
-            <div style={{ maxWidth: 360 }}>
-              <label style={styles.inputLabel}>{t.currentPasswordLabel}</label>
-              <input type="password" style={styles.textInput} value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} />
-              <label style={styles.inputLabel}>{t.newPasswordLabel}</label>
-              <input type="password" style={styles.textInput} value={newPassword} onChange={e => setNewPassword(e.target.value)} />
-              <p style={{ fontSize: 11, color: "var(--ink-soft)", marginTop: -6, marginBottom: 12 }}>{t.passwordHint}</p>
-              <label style={styles.inputLabel}>{t.confirmPasswordLabel}</label>
-              <input type="password" style={styles.textInput} value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} />
-              {pwError && <p style={styles.errorText}>{pwError}</p>}
-              <button style={styles.primaryBtn} disabled={!currentPassword || !newPassword || !confirmPassword || pwSaving} onClick={submitPasswordChange}>
-                {pwSaving ? "…" : t.changePasswordBtn}
-              </button>
-              {pwSavedMsg && <p style={styles.savedToast}>{t.passwordChanged}</p>}
+          <div style={{ marginTop: 24, display: 'flex', flexDirection: 'column', gap: 32 }}>
+            <div>
+              <h2 style={styles.ownerSectionTitle}>Change Username</h2>
+              <div style={{ maxWidth: 400 }}>
+                <label style={styles.inputLabel}>New Username</label>
+                <input type="text" style={styles.textInput} value={newUn} onChange={e => setNewUn(e.target.value)} />
+                <label style={styles.inputLabel}>{t.currentPasswordLabel || "Current Password"}</label>
+                <input type="password" style={styles.textInput} value={unPwd} onChange={e => setUnPwd(e.target.value)} />
+                {unError && <p style={styles.errorText}>{unError}</p>}
+                <button style={{...styles.primaryBtn, marginTop: 12}} disabled={!newUn || !unPwd || unSaving} onClick={submitUsernameChange}>
+                  {unSaving ? "…" : "Change Username"}
+                </button>
+                {unSavedMsg && <p style={styles.savedToast}>Username successfully updated!</p>}
+              </div>
             </div>
-          </>
+
+            <hr style={{ border: 'none', borderTop: '1px solid #e2e8f0' }} />
+
+            <div>
+              <h2 style={styles.ownerSectionTitle}>{t.changePasswordTab}</h2>
+              <div style={{ maxWidth: 400 }}>
+                <label style={styles.inputLabel}>{t.currentPasswordLabel || "Current Password"}</label>
+                <input type="password" style={styles.textInput} value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} />
+                <label style={styles.inputLabel}>{t.newPasswordLabel}</label>
+                <input type="password" style={styles.textInput} value={newPassword} onChange={e => setNewPassword(e.target.value)} />
+                <p style={{ fontSize: 11, color: "var(--ink-soft)", marginTop: -6, marginBottom: 12 }}>{t.passwordHint}</p>
+                <label style={styles.inputLabel}>{t.confirmPasswordLabel}</label>
+                <input type="password" style={styles.textInput} value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} />
+                {pwError && <p style={styles.errorText}>{pwError}</p>}
+                <button style={{...styles.primaryBtn, marginTop: 12}} disabled={!currentPassword || !newPassword || !confirmPassword || pwSaving} onClick={submitPasswordChange}>
+                  {pwSaving ? "…" : t.changePasswordBtn}
+                </button>
+                {pwSavedMsg && <p style={styles.savedToast}>{t.passwordChanged}</p>}
+              </div>
+            </div>
+          </div>
         )}
       </div>
       <ContactBar t={t} />

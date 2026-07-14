@@ -23,22 +23,37 @@ export async function verifyOwnerLogin(username, password) {
   }
 }
 
-export async function changeOwnerPassword(currentPassword, newPassword) {
+export async function changeOwnerPassword(currentPassword, newPassword, token) {
   try {
-    const token = await getOwnerToken();
     const res = await fetch('/api/owner/password', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify({ currentPassword, newPassword })
     });
-    const data = await res.json();
     if (res.ok) return { success: true };
-    if (res.status === 400) return { success: false, reason: 'too_short' };
-    if (res.status === 401) return { success: false, reason: 'invalid_current' };
-    return { success: false, reason: data.error || 'unknown' };
+    const data = await res.json().catch(() => ({}));
+    return { success: false, error: data.error || 'Failed to change password' };
   } catch (e) {
-    console.error(e);
-    return { success: false, reason: 'network' };
+    return { success: false, error: 'Network error' };
+  }
+}
+
+export async function changeOwnerUsername(newUsername, password, token) {
+  try {
+    const res = await fetch('/api/owner/username', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ newUsername, password })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      await storage.set(OWNER_TOKEN_KEY, data.token, false);
+      return { success: true };
+    }
+    const data = await res.json().catch(() => ({}));
+    return { success: false, error: data.error || 'Failed to change username' };
+  } catch (e) {
+    return { success: false, error: 'Network error' };
   }
 }
 

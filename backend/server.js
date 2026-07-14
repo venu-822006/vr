@@ -641,7 +641,28 @@ app.post('/api/owner/login', loginLimiter,
     } catch (e) { console.error(e); res.status(500).json({ error: 'Login failed' }); }
   }
 );
+app.patch('/api/owner/username', authenticateOwner,
+  [body('newUsername').trim().notEmpty(), body('password').notEmpty()], validate,
+  async (req, res) => {
+    const { newUsername, password } = req.body;
+    try {
+      const { rows } = await pool.query('SELECT * FROM owner_credentials WHERE username=$1', [req.user.username]);
+      if (!rows.length || !(await bcrypt.compare(password, rows[0].password_hash)))
+        return res.status(401).json({ error: 'Password incorrect' });
+      
+      // Check if new username is already taken (unlikely since there's only 1 owner usually, but good practice)
+      const existing = await pool.query('SELECT * FROM owner_credentials WHERE username=$1', [newUsername]);
+      if (existing.rows.length > 0 && req.user.username !== newUsername) {
+        return res.status(409).json({ error: 'Username already taken' });
+      }
 
+      await pool.query('UPDATE owner_credentials SET username=$1 WHERE username=$2', [newUsername, req.user.username]);
+      // The token contains the username, so we should issue a new token
+      const token = jwt.sign({ username: newUsername, role: 'owner' }, JWT_SECRET, { expiresIn: '7d' });
+      res.json({ message: 'Username updated', token });
+    } catch (e) { console.error(e); res.status(500).json({ error: 'Failed' }); }
+  }
+);
 app.patch('/api/owner/password', authenticateOwner,
   [body('currentPassword').notEmpty(), body('newPassword').isStrongPassword()], validate,
   async (req, res) => {
