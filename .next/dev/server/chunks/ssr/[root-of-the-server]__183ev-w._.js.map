@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 40, "column": 0}, "map": {"version":3,"sources":["file:///C:/Users/kvenu/Downloads/vr-vegetables-verified/pages/_document.jsx"],"sourcesContent":["import { Html, Head, Main, NextScript } from 'next/document';\n\nexport default function Document() {\n  return (\n    <Html>\n      <Head />\n      <body style={{ margin: 0, padding: 0 }}>\n        <Main />\n        <NextScript />\n      </body>\n    </Html>\n  );\n}\r\n"],"names":["Document","style","margin","padding"],"mappings":";;;;;AAAA;;;AAEe,SAASA;IACtB,qBACE,qKAAC,iIAAI;;0BACH,qKAAC,iIAAI;;;;;0BACL,qKAAC;gBAAKC,OAAO;oBAAEC,QAAQ;oBAAGC,SAAS;gBAAE;;kCACnC,qKAAC,iIAAI;;;;;kCACL,qKAAC,uIAAU;;;;;;;;;;;;;;;;;AAInB"}}]
+}

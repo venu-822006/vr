@@ -1,0 +1,11 @@
+node_modules
+backend
+android
+dist
+dist-ssr
+.env
+.env.local
+*.log
+.git
+.gitignore
+.github

@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+backend/node_modules/
+
+# Build output
+dist/
+dist-ssr/
+backend/dist/
+
+# Environment files — never commit real secrets
+.env
+.env.local
+.env.*.local
+backend/.env
+backend/.env.local
+
+# Uploaded files (served from disk when S3 isn't configured)
+backend/uploads/
+uploads/
+
+# Logs
+*.log
+npm-debug.log*
+logs/
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+
+# Capacitor / Android build artifacts
+android/app/build/
+android/.gradle/
+android/local.properties
+
+# Misc
+*.local
+.cache/
