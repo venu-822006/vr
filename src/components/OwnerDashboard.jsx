@@ -545,6 +545,7 @@ export default function OwnerDashboard({
     { key: 'add', label: t.addTab },
     { key: 'coupons', label: '🏷 Coupons' },
     { key: 'auditLogs', label: '📋 Logs' },
+    { key: 'marketing', label: '📱 Marketing' },
     { key: 'account', label: t.changePasswordTab },
   ];
 
@@ -672,6 +673,11 @@ export default function OwnerDashboard({
                           <div style={{ fontSize: 11, color: "var(--ink-soft)", fontWeight: 'normal' }}>
                             {new Date(o.placedAt).toLocaleString("en-IN", { dateStyle: "short", timeStyle: "short" })}
                           </div>
+                          {o.substitutionPref && o.substitutionPref !== 'substitute' && (
+                            <div style={{ fontSize: 10, color: o.substitutionPref === 'skip' ? '#b45309' : '#1d4ed8', marginTop: 4, fontWeight: 600 }}>
+                              {o.substitutionPref === 'skip' ? '⏭️ SKIP OUT-OF-STOCK' : '📞 CALL IF OUT-OF-STOCK'}
+                            </div>
+                          )}
                           {o.duplicateWarning && <div style={{ fontSize: 11, color: '#dc2626', fontWeight: 700, marginTop: 2, backgroundColor: '#fee2e2', padding: '2px 6px', borderRadius: 4, display: 'inline-block' }}>⚠️ Possible Duplicate</div>}
                         </td>
                         <td style={styles.ownerTd}>

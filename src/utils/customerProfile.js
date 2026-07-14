@@ -8,46 +8,60 @@ const keyFor = (phone) => `${KEY_PREFIX}${phone}`;
 
 const blankRecord = (name = "") => ({ name, addresses: [], favorites: [] });
 
-export async function getCustomerRecord(phone, fallbackName = "") {
+export async function getCustomerRecord(phone, fallbackName = "", token = null) {
   if (!phone) return blankRecord(fallbackName);
   const record = await getJSON(keyFor(phone), true, null);
   
   let favorites = record?.favorites || [];
+  let addresses = record?.addresses || [];
   try {
-    const res = await fetch(`/api/favorites/${phone}`);
-    if (res.ok) favorites = await res.json();
+    const [favRes, addrRes] = await Promise.all([
+      fetch(`/api/favorites/${phone}`),
+      token ? fetch(`/api/users/me/addresses`, { headers: { 'Authorization': `Bearer ${token}` } }) : Promise.resolve(null)
+    ]);
+    if (favRes.ok) favorites = await favRes.json();
+    if (addrRes && addrRes.ok) addresses = await addrRes.json();
   } catch (e) { /* fallback to local */ }
 
-  if (!record) return { ...blankRecord(fallbackName), favorites };
-  return { ...blankRecord(fallbackName), ...record, favorites };
+  if (!record) return { ...blankRecord(fallbackName), favorites, addresses };
+  return { ...blankRecord(fallbackName), ...record, favorites, addresses };
 }
 
-export async function saveCustomerRecord(phone, record) {
+export async function saveCustomerRecord(phone, record, token = null) {
   await setJSON(keyFor(phone), record, true);
+  if (token && record.addresses) {
+    try {
+      await fetch(`/api/users/me/addresses`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(record.addresses)
+      });
+    } catch (e) { console.error("Failed to sync addresses"); }
+  }
   return record;
 }
 
-export async function updateCustomerName(phone, name) {
-  const record = await getCustomerRecord(phone);
+export async function updateCustomerName(phone, name, token = null) {
+  const record = await getCustomerRecord(phone, "", token);
   const next = { ...record, name };
-  await saveCustomerRecord(phone, next);
+  await saveCustomerRecord(phone, next, token);
   return next;
 }
 
-export async function addAddress(phone, address) {
-  const record = await getCustomerRecord(phone);
+export async function addAddress(phone, address, token = null) {
+  const record = await getCustomerRecord(phone, "", token);
   const next = {
     ...record,
     addresses: [...(record.addresses || []), { id: Date.now().toString(36), ...address }],
   };
-  await saveCustomerRecord(phone, next);
+  await saveCustomerRecord(phone, next, token);
   return next;
 }
 
-export async function removeAddress(phone, addressId) {
-  const record = await getCustomerRecord(phone);
+export async function removeAddress(phone, addressId, token = null) {
+  const record = await getCustomerRecord(phone, "", token);
   const next = { ...record, addresses: (record.addresses || []).filter((a) => a.id !== addressId) };
-  await saveCustomerRecord(phone, next);
+  await saveCustomerRecord(phone, next, token);
   return next;
 }
 

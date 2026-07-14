@@ -254,6 +254,7 @@ const initDb = async () => {
         id SERIAL PRIMARY KEY, name VARCHAR(100),
         phone VARCHAR(20) UNIQUE, password_hash VARCHAR(255),
         role VARCHAR(20) DEFAULT 'customer',
+        addresses JSONB DEFAULT '[]'::jsonb,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
       CREATE TABLE IF NOT EXISTS refresh_tokens (
@@ -281,6 +282,7 @@ const initDb = async () => {
         discount DECIMAL(10,2) DEFAULT 0, total DECIMAL(10,2),
         status VARCHAR(20) DEFAULT 'pending',
         duplicate_warning BOOLEAN DEFAULT false,
+        substitution_pref VARCHAR(50) DEFAULT 'substitute',
         placed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
       CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
@@ -314,6 +316,8 @@ const initDb = async () => {
       `ALTER TABLE orders ADD COLUMN IF NOT EXISTS notes TEXT`,
       `ALTER TABLE orders ADD COLUMN IF NOT EXISTS discount DECIMAL(10,2) DEFAULT 0`,
       `ALTER TABLE orders ADD COLUMN IF NOT EXISTS duplicate_warning BOOLEAN DEFAULT false`,
+      `ALTER TABLE orders ADD COLUMN IF NOT EXISTS substitution_pref VARCHAR(50) DEFAULT 'substitute'`,
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS addresses JSONB DEFAULT '[]'::jsonb`,
       `ALTER TABLE products ADD COLUMN IF NOT EXISTS search_vector tsvector`,
       `ALTER TABLE order_items ADD COLUMN IF NOT EXISTS te VARCHAR(100)`,
       `ALTER TABLE users ADD COLUMN IF NOT EXISTS failed_attempts INTEGER DEFAULT 0`,
@@ -789,6 +793,27 @@ app.post('/api/products/:id/image', authenticateOwner, [param('id').isInt()], va
 );
 
 // =============================================================================
+// USER PROFILE (ADDRESSES)
+// =============================================================================
+
+app.get('/api/users/me/addresses', authenticateToken, async (req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT addresses FROM users WHERE phone=$1', [req.user.phone]);
+    res.json(rows[0]?.addresses || []);
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Failed to fetch addresses' }); }
+});
+
+app.put('/api/users/me/addresses', authenticateToken,
+  [body().isArray()], validate,
+  async (req, res) => {
+    try {
+      await pool.query('UPDATE users SET addresses=$1 WHERE phone=$2', [JSON.stringify(req.body), req.user.phone]);
+      res.json({ message: 'Addresses updated' });
+    } catch (e) { console.error(e); res.status(500).json({ error: 'Failed to update addresses' }); }
+  }
+);
+
+// =============================================================================
 // REVIEWS
 // =============================================================================
 
@@ -921,7 +946,7 @@ app.post('/api/orders', publicWriteLimiter,
     body('total').isFloat({ gt:0 }),
   ], validate,
   async (req, res) => {
-    const { id, customerName, phone, town, area, slot, payment, notes, subtotal, deliveryFee, discount, total, items, placedAt, couponId } = req.body;
+    const { id, customerName, phone, town, area, slot, payment, notes, subtotal, deliveryFee, discount, total, items, placedAt, couponId, substitutionPref } = req.body;
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
@@ -934,9 +959,9 @@ app.post('/api/orders', publicWriteLimiter,
       const isDuplicate = dupCheck.length > 0;
 
       await client.query(
-        `INSERT INTO orders(id,customer_name,phone,town,area,slot,payment,notes,subtotal,delivery_fee,discount,total,placed_at,duplicate_warning)
-         VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
-        [id, customerName, phone, town, area, slot, payment, notes||null, subtotal, deliveryFee, discount||0, total, placedAt||new Date(), isDuplicate]
+        `INSERT INTO orders(id,customer_name,phone,town,area,slot,payment,notes,subtotal,delivery_fee,discount,total,placed_at,duplicate_warning,substitution_pref)
+         VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
+        [id, customerName, phone, town, area, slot, payment, notes||null, subtotal, deliveryFee, discount||0, total, placedAt||new Date(), isDuplicate, substitutionPref || 'substitute']
       );
       for (const item of items) {
         await client.query(
@@ -995,6 +1020,7 @@ app.get('/api/orders', authenticateOwner, async (req, res) => {
       `SELECT o.id,o.customer_name,o.phone,o.town,o.area,o.slot,o.payment,o.notes,
               o.subtotal,o.delivery_fee,o.discount,o.total,o.status,o.placed_at,
               o.duplicate_warning,o.issue_reported,o.issue_note,o.delivery_rating,
+              o.substitution_pref,
               u.customer_notes,
               COALESCE(json_agg(json_build_object('name',oi.name,'te',oi.te,'qty',oi.qty::float,'mode',oi.mode,'price',oi.price::float))
                 FILTER(WHERE oi.id IS NOT NULL),'[]') as items
@@ -1013,7 +1039,7 @@ app.get('/api/orders', authenticateOwner, async (req, res) => {
       status:o.status, placedAt:o.placed_at, items:o.items,
       duplicateWarning:o.duplicate_warning, issueReported:o.issue_reported,
       issueNote:o.issue_note, deliveryRating:o.delivery_rating,
-      customerNotes:o.customer_notes
+      customerNotes:o.customer_notes, substitutionPref:o.substitution_pref
     })));
   } catch (e) { console.error(e); res.status(500).json({ error: 'Failed' }); }
 });

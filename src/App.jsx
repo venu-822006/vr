@@ -360,7 +360,7 @@ export default function App({ initialProducts = [] }) {
   // ---------------------------------------------------------------------
   // Order placement
   // ---------------------------------------------------------------------
-  const placeOrder = async ({ checkoutName, checkoutPhone, discount = 0, couponId = null, finalTotal } = {}) => {
+  const placeOrder = async ({ checkoutName, checkoutPhone, discount = 0, couponId = null, finalTotal, substitutionPref } = {}) => {
     setPlacingOrder(true);
     const newOrderId = "VR" + Math.floor(100000 + Math.random() * 900000);
     const computedTotal = finalTotal !== undefined ? finalTotal : total;
@@ -382,6 +382,7 @@ export default function App({ initialProducts = [] }) {
       placedAt: new Date().toISOString(),
       couponId,
       discount,
+      substitutionPref: substitutionPref || "substitute"
     };
 
     try {
@@ -407,11 +408,17 @@ export default function App({ initialProducts = [] }) {
     setTimeout(() => setShowConfetti(false), 5000);
   };
 
-  const handleUpdateName = async (name) => {
-    setCustomer((prev) => ({ ...prev, name }));
-    const record = await updateCustomerName(customer.phone, name);
+  useEffect(() => {
+    if (customer?.phone) {
+      getCustomerRecord(customer.phone, customer.name, customer.token).then(setCustomerRecord);
+    }
+  }, [customer]);
+
+  const handleUpdateName = async (newName) => {
+    setCustomer((prev) => ({ ...prev, name: newName }));
+    const record = await updateCustomerName(customer.phone, newName, customer?.token);
     setCustomerRecord(record);
-    await createSession({ name, phone: customer.phone });
+    await createSession({ name: newName, phone: customer.phone });
   };
 
   const handleChangePhone = async (newPhone) => {
@@ -422,12 +429,12 @@ export default function App({ initialProducts = [] }) {
   };
 
   const handleAddAddress = async (address) => {
-    const record = await addAddress(customer.phone, address);
+    const record = await addAddress(customer.phone, address, customer?.token);
     setCustomerRecord(record);
   };
 
   const handleRemoveAddress = async (addressId) => {
-    const record = await removeAddress(customer.phone, addressId);
+    const record = await removeAddress(customer.phone, addressId, customer?.token);
     setCustomerRecord(record);
   };
 

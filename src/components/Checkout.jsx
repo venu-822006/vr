@@ -17,6 +17,8 @@ export default function Checkout({
   const [couponState, setCouponState] = useState(null); // { discount, discountType, discountValue, couponId } | null
   const [couponError, setCouponError] = useState("");
   const [couponLoading, setCouponLoading] = useState(false);
+  const [addressLabel, setAddressLabel] = useState("Home");
+  const [substitutionPref, setSubstitutionPref] = useState("substitute");
 
   const discount = couponState?.discount || 0;
   const finalTotal = Math.max(0, total - discount);
@@ -54,9 +56,9 @@ export default function Checkout({
 
   const handlePlaceOrder = async () => {
     if (saveThisAddress && area.trim()) {
-      await onSaveAddress({ label: t.addressDefaultLabel, town, area: area.trim() });
+      await onSaveAddress({ label: addressLabel.trim() || "Home", town, area: area.trim() });
     }
-    onPlaceOrder({ checkoutName, checkoutPhone, discount, couponId: couponState?.couponId || null, finalTotal });
+    onPlaceOrder({ checkoutName, checkoutPhone, discount, couponId: couponState?.couponId || null, substitutionPref, finalTotal });
   };
 
   const getPaymentIcon = (id) => {
@@ -127,10 +129,20 @@ export default function Checkout({
           </select>
           <textarea aria-label="Delivery area details" style={styles.checkoutTextarea} rows={3} placeholder={t.areaPh} value={area} onChange={(e) => setArea(e.target.value)} />
           {onSaveAddress && (
-            <label style={styles.checkboxRow}>
-              <input type="checkbox" checked={saveThisAddress} onChange={(e) => setSaveThisAddress(e.target.checked)} aria-label="Save this address" />
-              {t.saveThisAddress}
-            </label>
+            <div style={{ marginTop: 8 }}>
+              <label style={styles.checkboxRow}>
+                <input type="checkbox" checked={saveThisAddress} onChange={(e) => setSaveThisAddress(e.target.checked)} aria-label="Save this address" />
+                Save this address for next time
+              </label>
+              {saveThisAddress && (
+                <input 
+                  style={{ ...styles.checkoutInput, marginTop: 8 }} 
+                  placeholder="Address Label (e.g., Home, Office)" 
+                  value={addressLabel} 
+                  onChange={(e) => setAddressLabel(e.target.value)} 
+                />
+              )}
+            </div>
           )}
         </div>
       </div>
@@ -145,6 +157,19 @@ export default function Checkout({
             </button>
           ))}
         </div>
+      </div>
+
+      <div style={styles.checkoutSection}>
+        <h3 style={styles.checkoutHeader}>🔄 If items are out of stock</h3>
+        <select 
+          style={styles.checkoutInput} 
+          value={substitutionPref} 
+          onChange={(e) => setSubstitutionPref(e.target.value)}
+        >
+          <option value="substitute">Substitute with best alternative</option>
+          <option value="skip">Skip item & refund difference</option>
+          <option value="call">Call me to discuss</option>
+        </select>
       </div>
 
       {/* Order Summary & Bill */}

@@ -54,6 +54,18 @@ export default function ProductCard({ p, lang, mode, price, qty, onStep, t, isFa
         <div style={{ ...styles.priceTag, transform: `rotate(${rotate}deg)` }}>
           {money(price)} <span style={styles.perUnit}>/ {unitLabel}</span>
         </div>
+        
+        {/* Weight / Quantity Clarity Indicators */}
+        {unitLabel === "piece" && (
+          <div style={{ fontSize: 10, color: 'var(--ink-soft)', marginTop: 4, textAlign: 'center', backgroundColor: 'var(--sage-bg)', padding: '2px 6px', borderRadius: 4 }}>1 piece = ~200g - 300g</div>
+        )}
+        {unitLabel === "bunch" && (
+          <div style={{ fontSize: 10, color: 'var(--ink-soft)', marginTop: 4, textAlign: 'center', backgroundColor: 'var(--sage-bg)', padding: '2px 6px', borderRadius: 4 }}>1 bunch = ~100g</div>
+        )}
+        {unitLabel === "100g" && (
+          <div style={{ fontSize: 10, color: 'var(--ink-soft)', marginTop: 4, textAlign: 'center', backgroundColor: 'var(--sage-bg)', padding: '2px 6px', borderRadius: 4 }}>Pre-packed in 100g</div>
+        )}
+
         {p.updatedAt && (
           <div style={{ fontSize: 10, color: 'var(--ink-soft)', marginTop: 4, textAlign: 'center', opacity: 0.7 }}>
             Prices updated: {new Date(p.updatedAt).toLocaleDateString()}
