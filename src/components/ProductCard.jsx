@@ -38,7 +38,7 @@ export default function ProductCard({ p, lang, mode, price, qty, onStep, t, isFa
         {p.image ? (
           <img src={p.image} alt={pname(p, lang)} style={{ ...styles.cardImage, cursor: onView ? 'pointer' : 'default' }} onClick={() => onView && onView(p)} />
         ) : (
-          <span style={{ ...styles.cardEmoji, cursor: onView ? 'pointer' : 'default' }} onClick={() => onView && onView(p)}>{p.emoji}</span>
+          <span className="card-emoji-responsive" style={{ ...styles.cardEmoji, cursor: onView ? 'pointer' : 'default' }} onClick={() => onView && onView(p)}>{p.emoji}</span>
         )}
         {outOfStock ? (
           <span style={styles.outOfStockBadge}><Ban size={11} /> {t.outOfStockBadge}</span>
@@ -49,7 +49,7 @@ export default function ProductCard({ p, lang, mode, price, qty, onStep, t, isFa
         ) : null}
       </div>
       <div style={styles.cardBody}>
-        <h3 style={styles.cardName}>{pname(p, lang)}</h3>
+        <h3 className="card-title-responsive" style={styles.cardName}>{pname(p, lang)}</h3>
         <ProductRating avgRating={p.avgRating} reviewCount={p.reviewCount} onClick={() => setReviewProduct && setReviewProduct(p)} />
         <div style={{ ...styles.priceTag, transform: `rotate(${rotate}deg)` }}>
           {money(price)} <span style={styles.perUnit}>/ {unitLabel}</span>
@@ -82,6 +82,7 @@ export default function ProductCard({ p, lang, mode, price, qty, onStep, t, isFa
             <div style={styles.lineTotal}>{qty}{unitLabel === "bunch" ? "" : unitLabel} × {money(price)} = <b>{money(price * qty)}</b></div>
             <div style={styles.stepper}>
               <button 
+                className="card-stepper-btn"
                 style={{...styles.stepBtn, ...(stepBtnHovered === 'minus' ? styles.stepBtnHover : {})}}
                 onClick={() => onStep(p, mode, -1)}
                 onMouseEnter={() => setStepBtnHovered('minus')}
@@ -89,8 +90,9 @@ export default function ProductCard({ p, lang, mode, price, qty, onStep, t, isFa
               >
                 <Minus size={14} />
               </button>
-              <span style={styles.stepQty}>{qty}{unitLabel === "bunch" ? "" : "kg"}</span>
+              <span style={styles.stepQty}>{qty}{unitLabel}</span>
               <button 
+                className="card-stepper-btn"
                 style={{...styles.stepBtn, ...(stepBtnHovered === 'plus' ? styles.stepBtnHover : {})}}
                 onClick={() => onStep(p, mode, 1)}
                 onMouseEnter={() => setStepBtnHovered('plus')}

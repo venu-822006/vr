@@ -20,11 +20,19 @@ export const fontFace = `
   
   /* Mobile Responsiveness Overrides */
   @media (max-width: 480px) {
-    .responsive-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 12px !important; padding: 12px 14px 20px !important; }
-    .responsive-header { padding: 10px 14px !important; gap: 8px !important; }
-    .responsive-search { max-width: 100% !important; padding: 6px 12px !important; }
+    .responsive-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; padding: 12px 10px 20px !important; }
+    .responsive-header { flex-wrap: wrap !important; padding: 10px 12px !important; gap: 8px !important; }
+    .responsive-search { max-width: 100% !important; flex: 1 1 100% !important; order: 3; padding: 6px 12px !important; margin-top: 2px !important; }
     .responsive-title { font-size: 18px !important; }
     .responsive-text { font-size: 13px !important; }
+    .card-emoji-responsive { font-size: 26px !important; }
+    .card-title-responsive { font-size: 13px !important; margin-bottom: 4px !important; }
+    .card-stepper-btn { width: 28px !important; height: 28px !important; }
+    .floating-cart-responsive { bottom: 12px !important; padding: 10px 18px !important; font-size: 13.5px !important; width: calc(100% - 24px) !important; justify-content: center !important; }
+    .checkout-wrap-responsive { padding: 16px 14px 150px !important; }
+    .checkout-footer-responsive { padding: 12px 14px !important; }
+    .owner-wrap-responsive { padding: 14px 10px !important; }
+    .owner-tabs-responsive { overflow-x: auto !important; max-width: calc(100vw - 20px) !important; white-space: nowrap !important; scrollbar-width: none; }
   }
 
   /* Print Styles */

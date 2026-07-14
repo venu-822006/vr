@@ -84,7 +84,7 @@ export default function Checkout({
   };
 
   return (
-    <div style={styles.checkoutWrap}>
+    <div className="checkout-wrap-responsive" style={styles.checkoutWrap}>
       
       {/* Customer Details Section (if not fully logged in) */}
       {(!customer?.phone || !customer?.name) && (
@@ -221,7 +221,7 @@ export default function Checkout({
       <button style={styles.cancelLink} onClick={onCancel}>{t.cancelShopping}</button>
 
       {/* Sticky Footer */}
-      <div style={styles.checkoutStickyFooter}>
+      <div className="checkout-footer-responsive" style={styles.checkoutStickyFooter}>
         <div style={styles.checkoutFooterInner}>
           <div style={styles.checkoutPayRow} onClick={() => setShowPaymentModal(true)}>
             <div style={styles.checkoutPayLeft}>

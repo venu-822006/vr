@@ -695,6 +695,7 @@ export default function App({ initialProducts = [] }) {
 
           {!cartOpen && cartCount > 0 && view === "catalog" && (
             <button 
+              className="floating-cart-responsive"
               style={{ ...styles.floatingCart, transition: 'transform 0.2s ease' }} 
               onClick={() => setView("checkout")}
               onDragOver={(e) => { e.preventDefault(); e.currentTarget.style.transform = 'scale(1.1)'; }}

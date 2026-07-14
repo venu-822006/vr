@@ -565,7 +565,7 @@ export default function OwnerDashboard({
   ];
 
   return (
-    <div style={styles.ownerWrap}>
+    <div className="owner-wrap-responsive" style={styles.ownerWrap}>
       <div style={styles.ownerHeader}>
         <div style={styles.logo}>
           <span style={styles.logoMark}>VR</span>
@@ -578,7 +578,7 @@ export default function OwnerDashboard({
       </div>
 
       <div style={styles.ownerCard}>
-        <div style={{ ...styles.ownerTabs, flexWrap: 'wrap', gap: 4 }}>
+        <div className="owner-tabs-responsive" style={styles.ownerTabs}>
           {TABS.map(tb => (
             <button key={tb.key}
               style={{ ...styles.ownerTabBtn, ...(tab === tb.key ? styles.ownerTabBtnActive : {}) }}
