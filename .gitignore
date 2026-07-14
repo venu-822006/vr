@@ -6,6 +6,7 @@ backend/node_modules/
 dist/
 dist-ssr/
 backend/dist/
+.next/
 
 # Environment files — never commit real secrets
 .env
