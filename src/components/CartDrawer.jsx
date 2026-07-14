@@ -3,7 +3,7 @@ import { styles } from "../styles/styles";
 import { money, pname } from "../utils/helpers";
 import Row from "./Row";
 
-export default function CartDrawer({ t, open, onClose, items, lang, onStep, subtotal, deliveryFee, total, onCheckout }) {
+export default function CartDrawer({ t, open, onClose, items, lang, onStep, subtotal, deliveryFee, total, onCheckout, allProducts }) {
   return (
     <>
       {open && <div style={styles.overlay} onClick={onClose} />}
@@ -28,6 +28,30 @@ export default function CartDrawer({ t, open, onClose, items, lang, onStep, subt
               </div>
             </div>
           ))}
+
+          {allProducts && allProducts.length > 0 && (
+            <div style={{ marginTop: 24 }}>
+              <p style={{ fontSize: 13, fontWeight: 700, color: "var(--leaf-deep)", marginBottom: 12 }}>You might also like</p>
+              <div style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 10, scrollbarWidth: "none" }}>
+                {allProducts
+                  .filter(p => !items.find(i => i.product.id === p.id) && p.inStock)
+                  .slice(0, 5)
+                  .map(p => (
+                    <div key={p.id} style={{ minWidth: 100, border: "1px solid var(--sage-line)", borderRadius: 12, padding: 8, background: "#fff", display: "flex", flexDirection: "column", alignItems: "center" }}>
+                      <span style={{ fontSize: 24, marginBottom: 4 }}>{p.emoji}</span>
+                      <span style={{ fontSize: 12, fontWeight: 600, textAlign: "center", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", width: "100%" }}>{pname(p, lang)}</span>
+                      <span style={{ fontSize: 11, color: "var(--ink-soft)", marginBottom: 6 }}>{money(p.price)}/kg</span>
+                      <button 
+                        style={{ ...styles.secondaryBtnSmall, width: "100%", padding: "4px 0", fontSize: 11 }}
+                        onClick={() => onStep(p, "retail", 1)}
+                      >
+                        <Plus size={12} style={{ display: "inline", verticalAlign: "middle" }} /> Add
+                      </button>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
         </div>
         {items.length > 0 && (
           <div style={styles.drawerFooter}>

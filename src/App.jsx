@@ -360,14 +360,21 @@ export default function App({ initialProducts = [] }) {
   // ---------------------------------------------------------------------
   // Order placement
   // ---------------------------------------------------------------------
-  const placeOrder = async ({ discount = 0, couponId = null, finalTotal } = {}) => {
+  const placeOrder = async ({ checkoutName, checkoutPhone, discount = 0, couponId = null, finalTotal } = {}) => {
     setPlacingOrder(true);
     const newOrderId = "VR" + Math.floor(100000 + Math.random() * 900000);
     const computedTotal = finalTotal !== undefined ? finalTotal : total;
+    
+    // Automatically set the customer in state if they checked out as a guest
+    if (!customer?.phone && checkoutPhone && checkoutName) {
+      setCustomer({ phone: checkoutPhone, name: checkoutName });
+      createSession({ phone: checkoutPhone, name: checkoutName }).catch(console.error);
+    }
+
     const order = {
       id: newOrderId,
-      customerName: customer?.name || "",
-      phone: customer?.phone || "",
+      customerName: checkoutName || customer?.name || "",
+      phone: checkoutPhone || customer?.phone || "",
       town, area, slot, payment,
       items: cartItems.map(i => ({ name: i.product.name, te: i.product.te, qty: i.qty, mode: i.mode, price: i.price })),
       subtotal, deliveryFee,
@@ -635,6 +642,7 @@ export default function App({ initialProducts = [] }) {
           {view === "checkout" && (
             <Checkout
               t={t} lang={lang}
+              customer={customer}
               town={town} setTown={setTown}
               area={area} setArea={setArea}
               slot={slot} setSlot={setSlot}
@@ -672,6 +680,7 @@ export default function App({ initialProducts = [] }) {
             deliveryFee={deliveryFee}
             total={total}
             onCheckout={() => { setCartOpen(false); setView("checkout"); }}
+            allProducts={allProducts}
           />
 
           {!cartOpen && cartCount > 0 && view === "catalog" && (

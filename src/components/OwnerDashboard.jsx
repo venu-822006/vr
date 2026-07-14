@@ -2,15 +2,15 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import {
   LogOut, Store, Package, PlusCircle, Trash2, KeyRound,
   Search, CheckCircle2, Download, TrendingUp, Tag, Upload,
-  AlertTriangle, Users, BarChart3, Flame
+  AlertTriangle, Users, BarChart3, Flame, Settings, Loader2, Save, X, Eye, Edit, ShieldCheck, CheckSquare
 } from "lucide-react";
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis,
   Tooltip, CartesianGrid, BarChart, Bar, Legend,
-  Line, ComposedChart, Cell
+  Line, ComposedChart, Cell, PieChart, Pie
 } from "recharts";
 import { styles } from "../styles/styles";
-import { CATEGORIES } from "../data/constants";
+import { CATEGORIES, TOWNS } from "../data/constants";
 import { BLANK_PRODUCT_DRAFT } from "../data/products";
 import { pname, townLabel, money } from "../utils/helpers";
 import { getOwnerToken, changeOwnerPassword } from "../utils/ownerAuth";
@@ -884,49 +884,56 @@ export default function OwnerDashboard({
               </div>
             </div>
 
-            {/* ---- PEAK HOURS HEATMAP ---- */}
-            <div style={{ margin: '36px 0 0' }}>
-              <h3 style={{ fontSize: 15, color: '#64748b', margin: '0 0 14px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
-                🔥 Orders Heatmap
-              </h3>
-              <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-                <table style={{ borderCollapse: 'separate', borderSpacing: 3, minWidth: 420 }}>
-                  <thead>
-                    <tr>
-                      <th style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', padding: '4px 8px', textAlign: 'left' }}>Location</th>
-                      {DAYS_OF_WEEK.map(d => (
-                        <th key={d} style={{ fontSize: 11, fontWeight: 600, color: '#64748b', padding: '4px 10px', textAlign: 'center' }}>{d}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {peakHoursData.map((row) => (
-                      <tr key={row.hour}>
-                        <td style={{ fontSize: 11, fontWeight: 500, color: '#64748b', padding: '3px 8px', whiteSpace: 'nowrap' }}>{row.hour}</td>
-                        {DAYS_OF_WEEK.map(day => (
-                          <td key={day} title={`${row.hour} ${day}: ${heatmapIntensityLabel(row[day])}`} style={{
-                            backgroundColor: heatmapColor(row[day]),
-                            borderRadius: 5, width: 38, height: 26, textAlign: 'center',
-                            fontSize: 9, fontWeight: 600,
-                            color: row[day] >= 0.6 ? '#fff' : '#374151',
-                            cursor: 'default', transition: 'transform 0.15s',
-                          }}>
-                            {Math.round(row[day] * 30)}
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            {/* ---- REAL DATA CHARTS ---- */}
+            {analyticsData && (
+              <div style={{ margin: '36px 0 0', display: 'flex', flexWrap: 'wrap', gap: '20px' }}>
+                <div style={{ flex: '1 1 300px', minWidth: 300, background: '#fff', padding: 20, borderRadius: 12, border: '1px solid var(--sage-line)' }}>
+                  <h3 style={{ fontSize: 15, color: '#64748b', margin: '0 0 14px', fontWeight: 700 }}>
+                    📈 Weekly Revenue
+                  </h3>
+                  <div style={{ width: '100%', height: 250 }}>
+                    <ResponsiveContainer>
+                      <BarChart data={analyticsData.weeklyTrends || []} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                        <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
+                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
+                        <Tooltip cursor={{ fill: '#f1f5f9' }} contentStyle={{ borderRadius: 8, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
+                        <Bar dataKey="revenue" fill="var(--leaf-mid)" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                <div style={{ flex: '1 1 300px', minWidth: 300, background: '#fff', padding: 20, borderRadius: 12, border: '1px solid var(--sage-line)' }}>
+                  <h3 style={{ fontSize: 15, color: '#64748b', margin: '0 0 14px', fontWeight: 700 }}>
+                    🥬 Popular Vegetables
+                  </h3>
+                  <div style={{ width: '100%', height: 250 }}>
+                    <ResponsiveContainer>
+                      <PieChart>
+                        <Pie
+                          data={analyticsData.popularVegetables || []}
+                          dataKey="total_qty"
+                          nameKey="name"
+                          cx="50%"
+                          cy="50%"
+                          outerRadius={80}
+                          innerRadius={50}
+                          paddingAngle={2}
+                        >
+                          {(analyticsData.popularVegetables || []).map((entry, index) => {
+                            const colors = ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#14b8a6', '#f97316', '#6366f1', '#ec4899', '#84cc16'];
+                            return <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />;
+                          })}
+                        </Pie>
+                        <Tooltip contentStyle={{ borderRadius: 8, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
+                        <Legend iconType="circle" wrapperStyle={{ fontSize: 11 }} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
               </div>
-              <div style={{ display: 'flex', gap: 10, marginTop: 10, alignItems: 'center' }}>
-                <span style={{ fontSize: 10, color: '#94a3b8' }}>Low</span>
-                {['#dcfce7', '#86efac', '#fbbf24', '#f97316', '#ef4444'].map(c => (
-                  <div key={c} style={{ width: 22, height: 10, borderRadius: 3, backgroundColor: c }} />
-                ))}
-                <span style={{ fontSize: 10, color: '#94a3b8' }}>Peak</span>
-              </div>
-            </div>
+            )}
 
             {/* ---- CUSTOMER SEGMENTATION ---- */}
             <div style={{ margin: '36px 0 0' }}>

@@ -92,7 +92,7 @@ export default function LoginScreen({ lang, setLang, onCustomerLogin, onOwnerLog
 
     try {
       const endpoint = mode === "signup" ? "/api/auth/register" : "/api/auth/login";
-      const body = mode === "signup" ? { name, phone, password } : { phone, password };
+      const body = mode === "signup" ? { name, phone, password: password.trim() } : { phone, password: password.trim() };
 
       const res = await fetch(endpoint, {
         method: "POST",
@@ -315,8 +315,9 @@ export default function LoginScreen({ lang, setLang, onCustomerLogin, onOwnerLog
                 <input
                   style={styles.textInput}
                   placeholder={t.phonePh}
-                  value={resetPhone}
+                  type="tel"
                   maxLength={10}
+                  value={resetPhone}
                   onChange={(e) => setResetPhone(e.target.value.replace(/\D/g, ""))}
                 />
                 {resetError && <p style={styles.errorText} key={resetError}>{resetError}</p>}

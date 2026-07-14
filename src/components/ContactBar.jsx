@@ -26,7 +26,7 @@ export default function ContactBar({ t }) {
           <MessageCircle size={20} color="#fff" />
         </a>
         <a
-          style={{ ...styles.contactBtn, background: "linear-gradient(135deg,#F5A623,#C1440E,#8A2BA0)" }}
+          style={{ ...styles.contactBtn, background: "#E1306C", zIndex: 100 }}
           href={`https://instagram.com/${INSTAGRAM_HANDLE}`}
           target="_blank" rel="noopener noreferrer"
           aria-label={t.instaLabel || "Instagram"}

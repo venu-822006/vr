@@ -7,10 +7,12 @@ import Row from "./Row";
 import PaymentOption from "./PaymentOption";
 
 export default function Checkout({
-  t, lang, town, setTown, area, setArea, slot, setSlot,
+  t, lang, customer, town, setTown, area, setArea, slot, setSlot,
   payment, setPayment, cartItems, subtotal, deliveryFee, total,
   onPlaceOrder, placingOrder, onCancel, savedAddresses, onSaveAddress,
 }) {
+  const [checkoutName, setCheckoutName] = useState(customer?.name || "");
+  const [checkoutPhone, setCheckoutPhone] = useState(customer?.phone || "");
   const [couponCode, setCouponCode] = useState("");
   const [couponState, setCouponState] = useState(null); // { discount, discountType, discountValue, couponId } | null
   const [couponError, setCouponError] = useState("");
@@ -54,7 +56,7 @@ export default function Checkout({
     if (saveThisAddress && area.trim()) {
       await onSaveAddress({ label: t.addressDefaultLabel, town, area: area.trim() });
     }
-    onPlaceOrder({ discount, couponId: couponState?.couponId || null, finalTotal });
+    onPlaceOrder({ checkoutName, checkoutPhone, discount, couponId: couponState?.couponId || null, finalTotal });
   };
 
   const getPaymentIcon = (id) => {
@@ -82,6 +84,31 @@ export default function Checkout({
   return (
     <div style={styles.checkoutWrap}>
       
+      {/* Customer Details Section (if not fully logged in) */}
+      {(!customer?.phone || !customer?.name) && (
+        <div style={styles.checkoutSection}>
+          <h3 style={styles.checkoutHeader}>👤 Contact Details</h3>
+          <div style={styles.checkoutAddressBox}>
+            <input 
+              aria-label="Name" 
+              style={styles.checkoutInput} 
+              placeholder="Your Name" 
+              value={checkoutName} 
+              onChange={(e) => setCheckoutName(e.target.value)} 
+            />
+            <input 
+              aria-label="Phone Number" 
+              style={styles.checkoutInput} 
+              placeholder="Phone Number (10 digits)" 
+              type="tel" 
+              maxLength={15}
+              value={checkoutPhone} 
+              onChange={(e) => setCheckoutPhone(e.target.value.replace(/\D/g, '').slice(-10))} 
+            />
+          </div>
+        </div>
+      )}
+
       {/* Delivery Address Section */}
       <div style={styles.checkoutSection}>
         <h3 style={styles.checkoutHeader}><MapPin size={18} /> {t.addrTitle}</h3>
@@ -183,8 +210,8 @@ export default function Checkout({
               <span style={styles.checkoutTotalAmount}>{money(finalTotal)}</span>
             </div>
             <button 
-              style={{ ...styles.checkoutPlaceBtn, ...(!area.trim() || cartItems.length === 0 || placingOrder || subtotal < 150 ? styles.checkoutPlaceBtnDisabled : {}) }}
-              disabled={!area.trim() || cartItems.length === 0 || placingOrder || subtotal < 150}
+              style={{ ...styles.checkoutPlaceBtn, ...(!checkoutName.trim() || checkoutPhone.trim().length !== 10 || !area.trim() || cartItems.length === 0 || placingOrder || subtotal < 150 ? styles.checkoutPlaceBtnDisabled : {}) }}
+              disabled={!checkoutName.trim() || checkoutPhone.trim().length !== 10 || !area.trim() || cartItems.length === 0 || placingOrder || subtotal < 150}
               onClick={handlePlaceOrder}
             >
               {placingOrder ? t.placingOrder : t.placeOrder} <ChevronRight size={18} />

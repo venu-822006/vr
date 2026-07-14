@@ -246,7 +246,7 @@ export const styles = {
   checkboxRow: { display: "flex", alignItems: "center", gap: 8, marginTop: 10, fontSize: 13.5, fontWeight: 600 },
   customVegRow: { display: "flex", alignItems: "center", gap: 10, padding: "8px 4px", borderBottom: "1px solid var(--sage-bg)" },
 
-  contactBar: { position: "fixed", bottom: 20, right: 16, display: "flex", flexDirection: "column", gap: 10, zIndex: 7 },
+  contactBar: { position: "fixed", bottom: 20, right: 16, display: "flex", flexDirection: "column", gap: 10, zIndex: 99 },
   contactBtn: { width: 46, height: 46, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 6px 16px rgba(0,0,0,0.2)", textDecoration: "none" },
 
   accountWrap: { maxWidth: 640, margin: "0 auto", padding: "20px 20px 8px" },
