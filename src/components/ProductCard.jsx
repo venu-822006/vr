@@ -2,8 +2,9 @@ import { useState } from "react";
 import { Plus, Minus, Leaf, Ban, Heart } from "lucide-react";
 import { styles } from "../styles/styles";
 import { money, pname } from "../utils/helpers";
+import { ProductRating } from "./ReviewSystem";
 
-export default function ProductCard({ p, lang, mode, price, qty, onStep, t, isFavorite, onToggleFavorite, onView, style }) {
+export default function ProductCard({ p, lang, mode, price, qty, onStep, t, isFavorite, onToggleFavorite, onView, setReviewProduct, style }) {
   const [isHovered, setIsHovered] = useState(false);
   const [favBtnHovered, setFavBtnHovered] = useState(false);
   const [stepBtnHovered, setStepBtnHovered] = useState(null);
@@ -49,6 +50,7 @@ export default function ProductCard({ p, lang, mode, price, qty, onStep, t, isFa
       </div>
       <div style={styles.cardBody}>
         <h3 style={styles.cardName}>{pname(p, lang)}</h3>
+        <ProductRating avgRating={p.avgRating} reviewCount={p.reviewCount} onClick={() => setReviewProduct && setReviewProduct(p)} />
         <div style={{ ...styles.priceTag, transform: `rotate(${rotate}deg)` }}>
           {money(price)} <span style={styles.perUnit}>/ {unitLabel}</span>
         </div>

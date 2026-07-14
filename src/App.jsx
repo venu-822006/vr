@@ -485,7 +485,7 @@ export default function App({ initialProducts = [] }) {
       <style>{fontFace}</style>
       <Confetti show={showConfetti} />
       {lightboxSrc && <ImageLightbox src={lightboxSrc} alt="Product" onClose={() => setLightboxSrc(null)} />}
-      {reviewProduct && <ReviewModal productId={reviewProduct.id} productName={reviewProduct.name} onClose={() => setReviewProduct(null)} />}
+      {reviewProduct && <ReviewModal productId={reviewProduct.id} productName={reviewProduct.name} token={customer?.token} onClose={() => setReviewProduct(null)} />}
 
       {/* Toast Notification */}
       {toast && (
@@ -554,6 +554,7 @@ export default function App({ initialProducts = [] }) {
                           onStep={step}
                           t={t}
                           onView={handleViewProduct}
+                          setReviewProduct={setReviewProduct}
                         />
                       </div>
                     ))}
@@ -576,6 +577,7 @@ export default function App({ initialProducts = [] }) {
                           onStep={step}
                           t={t}
                           onView={handleViewProduct}
+                          setReviewProduct={setReviewProduct}
                         />
                       </div>
                     ))}
@@ -611,6 +613,7 @@ export default function App({ initialProducts = [] }) {
                       isFavorite={(customerRecord.favorites || []).includes(p.id)}
                       onToggleFavorite={handleToggleFavorite}
                       onView={handleViewProduct}
+                      setReviewProduct={setReviewProduct}
                       style={{ animationDelay: `${index * 0.05}s` }}
                     />
                   ))
