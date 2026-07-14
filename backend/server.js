@@ -280,6 +280,7 @@ const initDb = async () => {
         subtotal DECIMAL(10,2), delivery_fee DECIMAL(10,2),
         discount DECIMAL(10,2) DEFAULT 0, total DECIMAL(10,2),
         status VARCHAR(20) DEFAULT 'pending',
+        duplicate_warning BOOLEAN DEFAULT false,
         placed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
       CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
@@ -312,6 +313,7 @@ const initDb = async () => {
     const migrations = [
       `ALTER TABLE orders ADD COLUMN IF NOT EXISTS notes TEXT`,
       `ALTER TABLE orders ADD COLUMN IF NOT EXISTS discount DECIMAL(10,2) DEFAULT 0`,
+      `ALTER TABLE orders ADD COLUMN IF NOT EXISTS duplicate_warning BOOLEAN DEFAULT false`,
       `ALTER TABLE products ADD COLUMN IF NOT EXISTS search_vector tsvector`,
       `ALTER TABLE order_items ADD COLUMN IF NOT EXISTS te VARCHAR(100)`,
       `ALTER TABLE users ADD COLUMN IF NOT EXISTS failed_attempts INTEGER DEFAULT 0`,
