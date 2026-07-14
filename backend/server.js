@@ -1374,7 +1374,13 @@ app.use((err, req, res, next) => {
 // instead of racing requests against an in-progress initDb().
 initDb()
   .then(() => {
-    httpServer.listen(port, () => console.log(`Server running on port ${port}${IS_PRODUCTION ? ' (production)' : ''}`));
+    // Start the server
+    httpServer.listen(port, () => {
+      console.log(`Server running on port ${port} (${process.env.NODE_ENV})`);
+    });
+
+    // Start the background worker in the same process to avoid needing a separate paid worker instance
+    import('./worker.js');
   })
   .catch((e) => {
     console.error('Failed to initialize database, exiting:', e);
