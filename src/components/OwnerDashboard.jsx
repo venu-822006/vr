@@ -106,13 +106,7 @@ export default function OwnerDashboard({
     return 'Peak';
   };
 
-  const topCustomers = useMemo(() => [
-    { name: 'Lakshmi Devi', phone: '9876543210', orders: 47, spent: 14250, lastOrder: '2026-07-11' },
-    { name: 'Ramesh Kumar', phone: '9845612378', orders: 38, spent: 11800, lastOrder: '2026-07-10' },
-    { name: 'Sunitha Reddy', phone: '9701234567', orders: 31, spent: 9450, lastOrder: '2026-07-12' },
-    { name: 'Venkata Rao', phone: '9948765432', orders: 26, spent: 7200, lastOrder: '2026-07-09' },
-    { name: 'Padma Kumari', phone: '9652341890', orders: 22, spent: 6100, lastOrder: '2026-07-08' },
-  ], []);
+  const topCustomers = stats?.topCustomers || [];
 
   const customerMedals = ['🥇', '🥈', '🥉'];
 

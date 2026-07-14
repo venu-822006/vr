@@ -813,6 +813,36 @@ app.put('/api/users/me/addresses', authenticateToken,
   }
 );
 
+app.get('/api/users/me/orders', authenticateToken, async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT o.id, o.customer_name as "customerName", o.phone, o.town, o.area, o.slot, o.payment,
+              o.notes, o.subtotal, o.delivery_fee as "deliveryFee", o.discount, o.total, o.status,
+              o.placed_at as "placedAt", o.delivery_rating as "deliveryRating",
+              COALESCE(json_agg(json_build_object('name', oi.name, 'te', oi.te, 'qty', oi.qty::float, 'mode', oi.mode, 'price', oi.price::float))
+                FILTER (WHERE oi.id IS NOT NULL), '[]') as items
+       FROM orders o
+       LEFT JOIN order_items oi ON o.id = oi.order_id
+       WHERE o.phone = $1
+       GROUP BY o.id
+       ORDER BY o.placed_at DESC`,
+      [req.user.phone]
+    );
+    // Parse floats manually as pg driver returns numeric as string
+    const mapped = rows.map(r => ({
+      ...r,
+      subtotal: parseFloat(r.subtotal),
+      deliveryFee: parseFloat(r.deliveryFee),
+      discount: parseFloat(r.discount),
+      total: parseFloat(r.total)
+    }));
+    res.json(mapped);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Failed to fetch orders' });
+  }
+});
+
 // =============================================================================
 // REVIEWS
 // =============================================================================
@@ -1372,10 +1402,20 @@ app.get('/api/owner/analytics', authenticateOwner, async (req, res) => {
       ORDER BY value DESC
     `);
 
+    const { rows: topCustomerRows } = await pool.query(`
+      SELECT customer_name as name, phone, COUNT(*) as orders, SUM(total) as spent, MAX(placed_at) as last_order
+      FROM orders
+      WHERE customer_name IS NOT NULL AND customer_name != ''
+      GROUP BY customer_name, phone
+      ORDER BY spent DESC
+      LIMIT 5
+    `);
+
     res.json({
       weeklyTrends: weeklyRows.map(r => ({ ...r, revenue: parseFloat(r.revenue), orders: parseInt(r.orders) })),
       popularVegetables: popularRows.map(r => ({ name: r.name, total_qty: parseFloat(r.total_qty) })),
-      townHeatmap: townRows.map(r => ({ name: r.name, value: parseInt(r.value) }))
+      townHeatmap: townRows.map(r => ({ name: r.name, value: parseInt(r.value) })),
+      topCustomers: topCustomerRows.map(r => ({ name: r.name, phone: r.phone, orders: parseInt(r.orders), spent: parseFloat(r.spent), lastOrder: r.last_order }))
     });
   } catch(e) {
     console.error(e); res.status(500).json({ error: 'Failed to fetch analytics' });

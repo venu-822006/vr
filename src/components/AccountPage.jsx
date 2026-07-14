@@ -90,6 +90,19 @@ export default function AccountPage({
   const loadOrders = async () => {
     setLoadingOrders(true);
     try {
+      if (customer?.token) {
+        const res = await fetch('/api/users/me/orders', {
+          headers: { 'Authorization': `Bearer ${customer.token}` }
+        });
+        if (res.ok) {
+          const apiOrders = await res.json();
+          setOrders(apiOrders);
+          setLoadingOrders(false);
+          return;
+        }
+      }
+      
+      // Fallback to local storage if API fails or no token
       const res = await storage.get("vr-veg-orders", true);
       const all = res && res.value ? JSON.parse(res.value) : [];
       setOrders(all.filter((o) => o.phone === customer?.phone).slice().reverse());
