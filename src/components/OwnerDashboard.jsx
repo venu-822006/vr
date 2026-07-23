@@ -24,6 +24,7 @@ export default function OwnerDashboard({
 }) {
   const [tab, setTab] = useState("orders");
   const [ownerToken, setOwnerToken] = useState("");
+  const [selectedOrderItems, setSelectedOrderItems] = useState(null);
 
   useEffect(() => {
     getOwnerToken().then(setOwnerToken);
@@ -36,8 +37,16 @@ export default function OwnerDashboard({
     month: { orders: 0, revenue: 0 },
     topProducts: [],
     outOfStock: [],
+    topCustomers: []
   });
   const [dailyData, setDailyData] = useState([]);
+
+  // analyticsData declared early to prevent TDZ crash
+  const [analyticsData, setAnalyticsData] = useState({
+    weeklyTrends: [],
+    popularVegetables: [],
+    townHeatmap: []
+  });
 
   // ---- Analytics Mock Data (Peak Hours, Customers, Inventory Alerts, P&L) --
   const DAYS_OF_WEEK = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -45,24 +54,6 @@ export default function OwnerDashboard({
     const h = i + 7;
     return h <= 12 ? `${h}AM` : `${h - 12}PM`;
   });
-
-  const [analyticsData, setAnalyticsData] = useState({
-    weeklyTrends: [],
-    popularVegetables: [],
-    townHeatmap: []
-  });
-
-  const loadAnalytics = async () => {
-    if (!ownerToken) return;
-    try {
-      const res = await fetch('/api/owner/analytics', { headers: { 'Authorization': `Bearer ${ownerToken}` } });
-      if (res.ok) setAnalyticsData(await res.json());
-    } catch(e) {}
-  };
-
-  useEffect(() => {
-    if (tab === 'analytics') loadAnalytics();
-  }, [tab, ownerToken]);
 
   const peakHoursData = useMemo(() => {
     // We repurpose this to show town heatmap if analyticsData is available
@@ -144,19 +135,49 @@ export default function OwnerDashboard({
     return [...actual, ...projected];
   }, [dailyData, forecastData]);
 
+  const [expensesList, setExpensesList] = useState([]);
+  
+  const [expenseDate, setExpenseDate] = useState(new Date().toISOString().split('T')[0]);
+  const [expenseAmount, setExpenseAmount] = useState('');
+  const [expenseNotes, setExpenseNotes] = useState('');
+  const [expenseMsg, setExpenseMsg] = useState('');
+
+  const submitExpense = async () => {
+    if (!expenseAmount) return;
+    try {
+      const res = await fetch('/api/owner/expenses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${ownerToken}` },
+        body: JSON.stringify({ date: expenseDate, amount: parseFloat(expenseAmount), notes: expenseNotes })
+      });
+      if (res.ok) {
+        setExpenseMsg('Expense saved!');
+        setExpenseAmount('');
+        setExpenseNotes('');
+        loadExpenses();
+        setTimeout(() => setExpenseMsg(''), 3000);
+      }
+    } catch(e) { console.error(e); }
+  };
+  
   const plData = useMemo(() => {
-    const monthRevenue = stats.month?.revenue ?? 98000;
-    const cost = Math.round(monthRevenue * 0.6);
-    const grossProfit = monthRevenue - cost;
-    const expenses = 2000;
-    const netProfit = grossProfit - expenses;
-    return { monthRevenue, cost, grossProfit, expenses, netProfit };
-  }, [stats]);
+    const monthRevenue = stats.month?.revenue || 0;
+    // Calculate total expenses for the current month
+    const currentMonth = new Date().getMonth();
+    const currentYear = new Date().getFullYear();
+    const monthExpenses = expensesList
+      .filter(e => {
+        const d = new Date(e.date);
+        return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+      })
+      .reduce((sum, e) => sum + Number(e.amount), 0);
+
+    const netProfit = monthRevenue - monthExpenses;
+    return { monthRevenue, expenses: monthExpenses, netProfit };
+  }, [stats, expensesList]);
 
   const plBarData = useMemo(() => [
     { label: 'Revenue', value: plData.monthRevenue, fill: '#16a34a' },
-    { label: 'Cost of Goods', value: plData.cost, fill: '#f97316' },
-    { label: 'Gross Profit', value: plData.grossProfit, fill: '#22c55e' },
     { label: 'Expenses', value: plData.expenses, fill: '#ef4444' },
     { label: 'Net Profit', value: plData.netProfit, fill: plData.netProfit >= 0 ? '#16a34a' : '#ef4444' },
   ], [plData]);
@@ -176,69 +197,71 @@ export default function OwnerDashboard({
     }
   }, []);
 
-  const loadStats = async () => {
+
+  const loadAnalytics = async () => {
     if (!ownerToken) return;
     try {
-      const res = await fetch('/api/stats', { headers: { 'Authorization': `Bearer ${ownerToken}` } });
+      const res = await fetch('/api/owner/analytics', { headers: { 'Authorization': `Bearer ${ownerToken}` } });
       if (res.ok) {
-        setStats(await res.json());
-        return;
+        const data = await res.json();
+        setAnalyticsData({
+          weeklyTrends: data.weeklyTrends || [],
+          popularVegetables: data.popularVegetables || [],
+          townHeatmap: data.townHeatmap || []
+        });
+        setStats({
+          today: data.today || { orders: 0, revenue: 0, pending: 0 },
+          week: data.week || { orders: 0, revenue: 0 },
+          month: data.month || { orders: 0, revenue: 0 },
+          topProducts: data.topProducts || [],
+          outOfStock: data.outOfStock || [],
+          topCustomers: data.topCustomers || []
+        });
+        
+        if (data.dailyData) {
+          const mapData = {};
+          data.dailyData.forEach(r => {
+            mapData[new Date(r.date).toDateString()] = r;
+          });
+          
+          const past15Days = [];
+          for (let i = 14; i >= 0; i--) {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            const found = mapData[d.toDateString()];
+            past15Days.push({
+               date: d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }),
+               revenue: found ? found.revenue : 0,
+               orders: found ? found.orders : 0
+            });
+          }
+          setDailyData(past15Days);
+        }
       }
-    } catch (e) {
-      // Fallback demo data
-      setStats({
-        today: { orders: 12, revenue: 3450, pending: 3 },
-        week: { orders: 84, revenue: 24100 },
-        month: { orders: 340, revenue: 98000 },
-        topProducts: [
-          { name: "Tomato", totalQty: 145, revenue: 5800 },
-          { name: "Onion", totalQty: 120, revenue: 4200 },
-          { name: "Carrot", totalQty: 85, revenue: 4250 }
-        ],
-        outOfStock: [{ id: 99, name: "Coriander", emoji: "🌿" }]
-      });
+    } catch(e) {
+      console.error("Failed to load analytics", e);
     }
   };
 
-  const loadDailyStats = async () => {
+  const loadExpenses = async () => {
     if (!ownerToken) return;
     try {
-      const res = await fetch('/api/stats/daily', { headers: { 'Authorization': `Bearer ${ownerToken}` } });
-      if (res.ok) {
-        const rows = await res.json();
-        setDailyData(rows.map(r => ({
-          date: new Date(r.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }),
-          revenue: r.revenue,
-          orders: r.orders,
-        })));
-        return;
-      }
-    } catch (e) {
-      // Fallback demo data
-      const mock = [];
-      const now = new Date();
-      for(let i=14; i>=0; i--) {
-        const d = new Date(now);
-        d.setDate(d.getDate() - i);
-        mock.push({
-          date: d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }),
-          revenue: Math.floor(Math.random() * 5000) + 1500,
-          orders: Math.floor(Math.random() * 20) + 5
-        });
-      }
-      setDailyData(mock);
+      const res = await fetch('/api/owner/expenses', { headers: { 'Authorization': `Bearer ${ownerToken}` } });
+      if (res.ok) setExpensesList(await res.json());
+    } catch(e) {
+      console.error("Failed to load expenses", e);
     }
   };
 
   useEffect(() => {
-    loadStats();
-    const int = setInterval(loadStats, 30000);
+    loadAnalytics();
+    loadExpenses();
+    const int = setInterval(() => {
+      loadAnalytics();
+      loadExpenses();
+    }, 30000);
     return () => clearInterval(int);
   }, [ownerToken]);
-
-  useEffect(() => {
-    if (tab === 'analytics') loadDailyStats();
-  }, [tab, ownerToken]);
 
 
   // ---- Orders --------------------------------------------------------------
@@ -614,6 +637,63 @@ export default function OwnerDashboard({
           </div>
         )}
 
+        {/* ---- ORDER ITEMS CART POPUP ---- */}
+        {selectedOrderItems && (
+          <div style={{
+            position: 'fixed', inset: 0, zIndex: 1000,
+            background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(6px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16
+          }} onClick={() => setSelectedOrderItems(null)}>
+            <div style={{
+              background: '#fff', borderRadius: 20, width: '100%', maxWidth: 460,
+              maxHeight: '88vh', overflow: 'hidden', boxShadow: '0 32px 100px rgba(0,0,0,0.25)',
+              display: 'flex', flexDirection: 'column'
+            }} onClick={e => e.stopPropagation()}>
+              <div style={{ padding: '20px 24px 16px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: '#0f172a' }}>🛒 Order Items</h3>
+                  <p style={{ margin: '4px 0 0', fontSize: 13, color: '#64748b' }}>
+                    #{selectedOrderItems.id} &middot; {selectedOrderItems.customerName} &middot; {selectedOrderItems.phone}
+                  </p>
+                </div>
+                <button onClick={() => setSelectedOrderItems(null)} style={{ background: '#f1f5f9', border: 'none', borderRadius: 8, padding: '6px 10px', cursor: 'pointer', color: '#64748b', fontSize: 18, lineHeight: 1 }}>&#x2715;</button>
+              </div>
+              <div style={{ flex: 1, overflowY: 'auto', padding: '12px 24px' }}>
+                {(selectedOrderItems.items || []).map((item, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '12px 0', borderBottom: i < selectedOrderItems.items.length - 1 ? '1px solid #f8fafc' : 'none' }}>
+                    <div style={{ width: 44, height: 44, borderRadius: 12, background: 'linear-gradient(135deg,#f0fdf4,#dcfce7)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>
+                      {products.find(p => p.name === item.name)?.emoji || '🥬'}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: '#0f172a' }}>{lang === 'te' && item.te ? item.te : item.name}</p>
+                      <p style={{ margin: '2px 0 0', fontSize: 12, color: '#64748b' }}>{item.qty} {item.mode === 'wholesale' ? 'kg (Wholesale)' : 'units'}</p>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <p style={{ margin: 0, fontSize: 15, fontWeight: 800, color: '#059669' }}>{money(item.price)}</p>
+                      {item.mode === 'wholesale' && <span style={{ fontSize: 10, background: '#ede9fe', color: '#7c3aed', padding: '1px 6px', borderRadius: 6, fontWeight: 600 }}>BULK</span>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ padding: '16px 24px', borderTop: '1px solid #f1f5f9', background: '#f8fafc', borderRadius: '0 0 20px 20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#64748b', marginBottom: 6 }}>
+                  <span>Subtotal</span><span>{money(selectedOrderItems.subtotal ?? selectedOrderItems.total)}</span>
+                </div>
+                {selectedOrderItems.deliveryFee > 0 && <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#64748b', marginBottom: 6 }}><span>Delivery</span><span>{money(selectedOrderItems.deliveryFee)}</span></div>}
+                {selectedOrderItems.discount > 0 && <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#16a34a', marginBottom: 6 }}><span>Discount</span><span>-{money(selectedOrderItems.discount)}</span></div>}
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 16, fontWeight: 800, color: '#0f172a', paddingTop: 10, borderTop: '1px solid #e2e8f0' }}>
+                  <span>Total</span><span style={{ color: '#059669' }}>{money(selectedOrderItems.total)}</span>
+                </div>
+                <div style={{ marginTop: 10, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: 12, padding: '4px 10px', borderRadius: 20, fontWeight: 600, backgroundColor: selectedOrderItems.payment === 'cod' ? '#fef3c7' : '#dcfce7', color: selectedOrderItems.payment === 'cod' ? '#b45309' : '#15803d' }}>{selectedOrderItems.payment?.toUpperCase()}</span>
+                  <span style={{ fontSize: 12, padding: '4px 10px', borderRadius: 20, fontWeight: 600, backgroundColor: statusBadge(selectedOrderItems.status).bg, color: statusBadge(selectedOrderItems.status).color }}>{selectedOrderItems.status?.replace(/_/g, ' ')}</span>
+                  {selectedOrderItems.area && <span style={{ fontSize: 12, padding: '4px 10px', borderRadius: 20, fontWeight: 600, background: '#f1f5f9', color: '#475569' }}>📍 {selectedOrderItems.area}, {selectedOrderItems.town}</span>}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ---- ORDERS TAB ---- */}
         {tab === "orders" && (
           <>
@@ -621,6 +701,7 @@ export default function OwnerDashboard({
               <StatCard label="Today's Orders" value={stats.today?.orders ?? 0} bg="#f8fafc" border="#e2e8f0" />
               <StatCard label="Today's Revenue" value={money(stats.today?.revenue ?? 0)} bg="#f0fdf4" border="#bbf7d0" color="#15803d" />
               <StatCard label="Pending / Active" value={stats.today?.pending ?? 0} bg="#fffbeb" border="#fef3c7" color="#d97706" />
+              <StatCard label="Today's Profit" value={money(Math.max(0, (stats.today?.revenue ?? 0) - (plData.expenses / 30)))} bg="#f0f9ff" border="#bae6fd" color="#0369a1" sub="est. daily" />
             </div>
 
             <div style={{ display: "flex", gap: 12, marginBottom: 16, flexWrap: "wrap", alignItems: "center" }}>
@@ -720,7 +801,11 @@ export default function OwnerDashboard({
                           </div>
                         </td>
                         <td style={styles.ownerTd}>{o.area}, {townLabel(o.town, lang)}</td>
-                        <td style={{ ...styles.ownerTd, minWidth: 200, fontSize: 12 }}>{itemsSummary(o.items)}</td>
+                        <td style={{ ...styles.ownerTd, minWidth: 120 }}>
+                          <button onClick={() => setSelectedOrderItems(o)} style={{ ...styles.secondaryBtnSmall, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, margin: 0, padding: '8px 12px' }}>
+                            <Package size={14} /> View Items ({o.items.length})
+                          </button>
+                        </td>
                         <td style={styles.ownerTd}>{money(o.total)} <br /><span style={{ fontSize: 11, color: "#64748b" }}>{o.payment?.toUpperCase()}</span></td>
                         <td style={styles.ownerTd}>
                           <span style={{ padding: '4px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: '600', textTransform: 'capitalize', backgroundColor: statusBadge(o.status).bg, color: statusBadge(o.status).color }}>
@@ -768,16 +853,14 @@ export default function OwnerDashboard({
           <>
             <h2 style={styles.sectionTitle}><TrendingUp size={18} /> Analytics</h2>
 
-            <h3 style={{ fontSize: 14, color: '#64748b', margin: '0 0 10px', fontWeight: 600 }}>This Week</h3>
-            <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
-              <StatCard label="Orders" value={stats.week?.orders ?? 0} />
-              <StatCard label="Revenue" value={money(stats.week?.revenue ?? 0)} bg="#f0fdf4" border="#bbf7d0" color="#15803d" />
-            </div>
-
-            <h3 style={{ fontSize: 14, color: '#64748b', margin: '0 0 10px', fontWeight: 600 }}>This Month</h3>
-            <div style={{ display: 'flex', gap: 12, marginBottom: 24, flexWrap: 'wrap' }}>
-              <StatCard label="Orders" value={stats.month?.orders ?? 0} />
-              <StatCard label="Revenue" value={money(stats.month?.revenue ?? 0)} bg="#f0fdf4" border="#bbf7d0" color="#15803d" />
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginBottom: 20 }}>
+              <StatCard label="Today's Orders" value={stats.today?.orders ?? 0} />
+              <StatCard label="Today's Revenue" value={money(stats.today?.revenue ?? 0)} bg="#f0fdf4" border="#bbf7d0" color="#15803d" />
+              <StatCard label="Today's Profit" value={money(Math.max(0, (stats.today?.revenue ?? 0) - (plData.expenses / 30)))} bg="#f0f9ff" border="#bae6fd" color="#0369a1" sub="est. daily" />
+              <StatCard label="Weekly Orders" value={stats.week?.orders ?? 0} />
+              <StatCard label="Weekly Revenue" value={money(stats.week?.revenue ?? 0)} bg="#f0fdf4" border="#bbf7d0" color="#15803d" />
+              <StatCard label="Monthly Orders" value={stats.month?.orders ?? 0} />
+              <StatCard label="Monthly Revenue" value={money(stats.month?.revenue ?? 0)} bg="#f0fdf4" border="#bbf7d0" color="#15803d" />
             </div>
 
             {/* Revenue Chart with Forecast */}
@@ -956,7 +1039,51 @@ export default function OwnerDashboard({
               </div>
             )}
 
-            {/* ---- CUSTOMER SEGMENTATION ---- */}
+            {/* ---- VEGETABLE REVENUE CHART ---- */}
+            {(analyticsData.popularVegetables || []).length > 0 && (
+              <div style={{ margin: '28px 0 0', display: 'flex', flexWrap: 'wrap', gap: '20px' }}>
+                <div style={{ flex: '1 1 300px', minWidth: 300, background: '#fff', padding: 20, borderRadius: 12, border: '1px solid var(--sage-line)' }}>
+                  <h3 style={{ fontSize: 15, color: '#64748b', margin: '0 0 14px', fontWeight: 700 }}>💰 Revenue per Vegetable</h3>
+                  <div style={{ width: '100%', height: 260 }}>
+                    <ResponsiveContainer>
+                      <BarChart data={[...analyticsData.popularVegetables].sort((a,b)=>(b.revenue||0)-(a.revenue||0)).slice(0,10)} layout="vertical" margin={{ top: 0, right: 50, left: 10, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
+                        <XAxis type="number" tick={{ fontSize: 11, fill: '#94a3b8' }} tickFormatter={v => `₹${v}`} axisLine={false} tickLine={false} />
+                        <YAxis dataKey="name" type="category" tick={{ fontSize: 11, fill: '#475569' }} axisLine={false} tickLine={false} width={75} />
+                        <Tooltip formatter={(v) => [`₹${v}`, 'Revenue']} contentStyle={{ borderRadius: 8, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
+                        <Bar dataKey="revenue" radius={[0,6,6,0]}>
+                          {[...analyticsData.popularVegetables].sort((a,b)=>(b.revenue||0)-(a.revenue||0)).slice(0,10).map((_,i) => {
+                            const colors=['#22c55e','#3b82f6','#f59e0b','#ef4444','#8b5cf6','#14b8a6','#f97316','#6366f1','#ec4899','#84cc16'];
+                            return <Cell key={i} fill={colors[i%colors.length]} />;
+                          })}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                <div style={{ flex: '1 1 300px', minWidth: 300, background: '#fff', padding: 20, borderRadius: 12, border: '1px solid var(--sage-line)' }}>
+                  <h3 style={{ fontSize: 15, color: '#64748b', margin: '0 0 14px', fontWeight: 700 }}>📦 Units Ordered — All Vegetables</h3>
+                  <div style={{ width: '100%', height: 260 }}>
+                    <ResponsiveContainer>
+                      <BarChart data={[...analyticsData.popularVegetables].sort((a,b)=>b.total_qty-a.total_qty)} margin={{ top:5, right:10, left:-20, bottom:46 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                        <XAxis dataKey="name" tick={{ fontSize:10, fill:'#94a3b8' }} angle={-35} textAnchor="end" axisLine={false} tickLine={false} interval={0} />
+                        <YAxis tick={{ fontSize:11, fill:'#94a3b8' }} axisLine={false} tickLine={false} />
+                        <Tooltip formatter={(v) => [`${v} units`, 'Qty']} contentStyle={{ borderRadius:8, border:'none', boxShadow:'0 4px 12px rgba(0,0,0,0.1)' }} />
+                        <Bar dataKey="total_qty" radius={[6,6,0,0]}>
+                          {analyticsData.popularVegetables.map((_,i) => {
+                            const colors=['#22c55e','#3b82f6','#f59e0b','#ef4444','#8b5cf6','#14b8a6','#f97316','#6366f1','#ec4899','#84cc16'];
+                            return <Cell key={i} fill={colors[i%colors.length]} />;
+                          })}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div style={{ margin: '36px 0 0' }}>
               <h3 style={{ fontSize: 15, color: '#64748b', margin: '0 0 14px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Users size={18} style={{ color: '#6366f1' }} />
@@ -1003,13 +1130,36 @@ export default function OwnerDashboard({
                 <BarChart3 size={18} style={{ color: '#16a34a' }} />
                 Profit & Loss — This Month
               </h3>
+
+              <div style={{ backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, padding: 16, marginBottom: 20 }}>
+                <h4 style={{ margin: '0 0 12px', fontSize: 14, color: '#334155' }}>Log Daily Expense</h4>
+                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+                  <div>
+                    <label style={{ fontSize: 12, color: '#64748b', display: 'block', marginBottom: 4 }}>Date</label>
+                    <input type="date" style={{ ...styles.textInput, margin: 0, padding: '8px 12px' }} value={expenseDate} onChange={e => setExpenseDate(e.target.value)} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 12, color: '#64748b', display: 'block', marginBottom: 4 }}>Amount (₹)</label>
+                    <input type="number" placeholder="e.g. 5000" style={{ ...styles.textInput, margin: 0, padding: '8px 12px' }} value={expenseAmount} onChange={e => setExpenseAmount(e.target.value)} />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 200 }}>
+                    <label style={{ fontSize: 12, color: '#64748b', display: 'block', marginBottom: 4 }}>Notes</label>
+                    <input type="text" placeholder="e.g. Wholesale market purchases" style={{ ...styles.textInput, margin: 0, padding: '8px 12px' }} value={expenseNotes} onChange={e => setExpenseNotes(e.target.value)} />
+                  </div>
+                  <button style={{ ...styles.primaryBtn, padding: '8px 16px' }} onClick={submitExpense} disabled={!expenseAmount}>
+                    Save Expense
+                  </button>
+                </div>
+                {expenseMsg && <div style={{ marginTop: 8, color: '#16a34a', fontSize: 13, fontWeight: 500 }}>{expenseMsg}</div>}
+              </div>
+
               <div style={{
                 padding: 20, backgroundColor: '#f8fafc', borderRadius: 14,
                 border: '1px solid #e2e8f0'
               }}>
                 {plBarData.map((item, i) => {
-                  const maxVal = plData.monthRevenue;
-                  const barWidth = Math.max(3, Math.abs(item.value) / maxVal * 100);
+                  const maxVal = Math.max(1, ...plBarData.map(d => Math.abs(d.value)));
+                  const barWidth = Math.max(3, (Math.abs(item.value) / maxVal) * 100);
                   return (
                     <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: i < plBarData.length - 1 ? 14 : 0 }}>
                       <span style={{ width: 120, fontSize: 13, fontWeight: 500, color: '#374151', textAlign: 'right', flexShrink: 0 }}>

@@ -245,6 +245,76 @@ const authenticateOwner = (req, res, next) => {
   });
 };
 
+function authenticateStaff(req, res, next) {
+  const token = (req.headers['authorization'] || '').split(' ')[1];
+  if (!token) return res.sendStatus(401);
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err || user.role !== 'staff') return res.sendStatus(403);
+    req.user = user;
+    next();
+  });
+}
+
+// =============================================================================
+// STAFF ROUTES
+// =============================================================================
+
+app.post('/api/staff/login', (req, res) => {
+  const { password } = req.body;
+  // Hardcoded simple password for delivery boys. Can be moved to DB later.
+  if (password === 'delivery123') {
+    const token = jwt.sign({ role: 'staff' }, JWT_SECRET, { expiresIn: '7d' });
+    res.json({ success: true, token });
+  } else {
+    res.status(401).json({ error: 'Incorrect password' });
+  }
+});
+
+app.get('/api/staff/orders', authenticateStaff, async (req, res) => {
+  try {
+    const { rows } = await pool.query(`
+      SELECT o.id, o.placed_at, o.total, o.status, o.customer_name, o.phone, 
+             o.town, o.area, o.delivery_slot, o.payment_mode, o.delivery_fee, o.issue_reported,
+             COALESCE(
+               json_agg(
+                 json_build_object('name', oi.name, 'qty', oi.qty, 'price', oi.price)
+               ) FILTER (WHERE oi.id IS NOT NULL), '[]'
+             ) as items
+      FROM orders o
+      LEFT JOIN order_items oi ON o.id = oi.order_id
+      WHERE o.status IN ('pending', 'processing', 'out_for_delivery')
+      GROUP BY o.id
+      ORDER BY o.placed_at DESC
+    `);
+    res.json(rows);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Failed to fetch staff orders' });
+  }
+});
+
+app.patch('/api/staff/orders/:id/status', authenticateStaff, [
+  param('id').isInt(),
+  body('status').isIn(['pending', 'processing', 'out_for_delivery', 'delivered', 'cancelled'])
+], validate, async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      'UPDATE orders SET status = $1 WHERE id = $2 RETURNING *',
+      [req.body.status, req.params.id]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Order not found' });
+
+    // Emit live update
+    req.io.emit('orderUpdate', { id: req.params.id, status: req.body.status });
+    res.json(rows[0]);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Failed to update order status' });
+  }
+});
+
+
+
 // ─── DB Init ──────────────────────────────────────────────────────────────────
 const initDb = async () => {
   const client = await pool.connect();
@@ -365,6 +435,13 @@ const initDb = async () => {
       `ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_rating INTEGER DEFAULT NULL`,
       `ALTER TABLE products ADD COLUMN IF NOT EXISTS base_stock INTEGER DEFAULT 100`,
       `ALTER TABLE products ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP`,
+      `CREATE TABLE IF NOT EXISTS daily_expenses (
+        id SERIAL PRIMARY KEY,
+        date DATE UNIQUE NOT NULL,
+        amount DECIMAL(10,2) NOT NULL,
+        notes TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`,
     ];
     for (const sql of migrations) {
       await client.query(sql).catch(e => console.warn('Migration skipped:', e.message));
@@ -607,8 +684,21 @@ app.post('/api/auth/logout', async (req, res) => {
 app.get('/api/auth/me', authenticateToken, (req, res) => res.json({ user: req.user }));
 
 // =============================================================================
-// OWNER AUTH
+// OWNER & STAFF AUTH
 // =============================================================================
+
+app.post('/api/staff/login', loginLimiter,
+  [body('password').notEmpty()], validate,
+  async (req, res) => {
+    const { password } = req.body;
+    // Hardcoded staff password for now, can be moved to DB later
+    if (password !== 'delivery123') {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+    const token = jwt.sign({ id: 'staff', role: 'staff' }, JWT_SECRET, { expiresIn: '12h' });
+    res.json({ token, user: { role: 'staff' } });
+  }
+);
 
 app.post('/api/owner/login', loginLimiter,
   [body('username').trim().notEmpty(), body('password').notEmpty()], validate,
@@ -1341,105 +1431,112 @@ app.get('/api/favorites/:phone', async (req, res) => {
 // =============================================================================
 // STATS (with Redis cache)
 // =============================================================================
+// OWNER ANALYTICS
+// =============================================================================
 
-app.get('/api/stats', authenticateOwner, async (req, res) => {
-  const cached = await cacheGet('stats:main');
-  if (cached) return res.json(cached);
-
+app.get('/api/owner/analytics', authenticateOwner, async (req, res) => {
   try {
     const today = new Date(); today.setHours(0,0,0,0);
     const weekStart = new Date(); weekStart.setDate(weekStart.getDate()-7);
     const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0,0,0,0);
 
-    const [todayR, weekR, monthR, topR, outR] = await Promise.all([
-      pool.query(`SELECT COUNT(*) orders,COALESCE(SUM(total),0) revenue,
+    const [todayR, weekR, monthR, topR, outR, weeklyRowsR, popularRowsR, townRowsR, topCustomerRowsR, dailyDataR] = await Promise.all([
+      pool.query(`SELECT COUNT(CASE WHEN status != 'cancelled' THEN 1 END) orders,COALESCE(SUM(CASE WHEN status != 'cancelled' THEN total ELSE 0 END),0) revenue,
         COUNT(CASE WHEN status IN('pending','processing','out_for_delivery') THEN 1 END) pending
         FROM orders WHERE placed_at>=$1`,[today]),
-      pool.query(`SELECT COUNT(*) orders,COALESCE(SUM(total),0) revenue FROM orders WHERE placed_at>=$1`,[weekStart]),
-      pool.query(`SELECT COUNT(*) orders,COALESCE(SUM(total),0) revenue FROM orders WHERE placed_at>=$1`,[monthStart]),
+      pool.query(`SELECT COUNT(CASE WHEN status != 'cancelled' THEN 1 END) orders,COALESCE(SUM(CASE WHEN status != 'cancelled' THEN total ELSE 0 END),0) revenue FROM orders WHERE placed_at>=$1`,[weekStart]),
+      pool.query(`SELECT COUNT(CASE WHEN status != 'cancelled' THEN 1 END) orders,COALESCE(SUM(CASE WHEN status != 'cancelled' THEN total ELSE 0 END),0) revenue FROM orders WHERE placed_at>=$1`,[monthStart]),
       pool.query(`SELECT oi.name,SUM(oi.qty) total_qty,SUM(oi.price*oi.qty) revenue
-        FROM order_items oi JOIN orders o ON oi.order_id=o.id WHERE o.placed_at>=$1
+        FROM order_items oi JOIN orders o ON oi.order_id=o.id WHERE o.placed_at>=$1 AND o.status != 'cancelled'
         GROUP BY oi.name ORDER BY revenue DESC LIMIT 5`,[monthStart]),
       pool.query(`SELECT id,name,emoji FROM products WHERE in_stock=false`),
+      
+      // old analytics queries
+      pool.query(`
+        SELECT TO_CHAR(DATE(placed_at), 'Dy') as day, DATE(placed_at) as full_date, 
+               COALESCE(SUM(CASE WHEN status != 'cancelled' THEN total ELSE 0 END), 0) as revenue, 
+               COUNT(CASE WHEN status != 'cancelled' THEN 1 END) as orders
+        FROM orders
+        WHERE placed_at >= NOW() - INTERVAL '6 days'
+        GROUP BY DATE(placed_at)
+        ORDER BY DATE(placed_at) ASC
+      `),
+      pool.query(`
+        SELECT oi.name, SUM(oi.qty) as total_qty
+        FROM order_items oi JOIN orders o ON oi.order_id = o.id
+        WHERE o.placed_at >= NOW() - INTERVAL '30 days' AND o.status != 'cancelled'
+        GROUP BY oi.name
+        ORDER BY total_qty DESC
+        LIMIT 10
+      `),
+      pool.query(`
+        SELECT town as name, COUNT(CASE WHEN status != 'cancelled' THEN 1 END) as value
+        FROM orders
+        WHERE town IS NOT NULL
+        GROUP BY town
+        ORDER BY value DESC
+      `),
+      pool.query(`
+        SELECT customer_name as name, phone, COUNT(CASE WHEN status != 'cancelled' THEN 1 END) as orders, 
+               SUM(CASE WHEN status != 'cancelled' THEN total ELSE 0 END) as spent, MAX(placed_at) as last_order
+        FROM orders
+        WHERE customer_name IS NOT NULL AND customer_name != ''
+        GROUP BY customer_name, phone
+        ORDER BY spent DESC
+        LIMIT 5
+      `),
+      pool.query(`
+        SELECT DATE(placed_at) as date, COUNT(CASE WHEN status != 'cancelled' THEN 1 END) as orders, 
+               COALESCE(SUM(CASE WHEN status != 'cancelled' THEN total ELSE 0 END),0) as revenue
+        FROM orders
+        WHERE placed_at >= NOW() - INTERVAL '30 days'
+        GROUP BY DATE(placed_at)
+        ORDER BY date ASC
+      `)
     ]);
 
-    const result = {
-      today:{ orders:parseInt(todayR.rows[0].orders), revenue:parseFloat(todayR.rows[0].revenue), pending:parseInt(todayR.rows[0].pending) },
-      week:{ orders:parseInt(weekR.rows[0].orders), revenue:parseFloat(weekR.rows[0].revenue) },
-      month:{ orders:parseInt(monthR.rows[0].orders), revenue:parseFloat(monthR.rows[0].revenue) },
+    res.json({
+      today: { orders: parseInt(todayR.rows[0].orders), revenue: parseFloat(todayR.rows[0].revenue), pending: parseInt(todayR.rows[0].pending) },
+      week: { orders: parseInt(weekR.rows[0].orders), revenue: parseFloat(weekR.rows[0].revenue) },
+      month: { orders: parseInt(monthR.rows[0].orders), revenue: parseFloat(monthR.rows[0].revenue) },
       topProducts: topR.rows.map(r=>({ name:r.name, totalQty:parseFloat(r.total_qty), revenue:parseFloat(r.revenue) })),
       outOfStock: outR.rows,
-    };
-    await cacheSet('stats:main', result, 60);
-    res.json(result);
-  } catch (e) { console.error(e); res.status(500).json({ error: 'Failed' }); }
-});
-
-app.get('/api/stats/daily', authenticateOwner, async (req, res) => {
-  const cached = await cacheGet('stats:daily');
-  if (cached) return res.json(cached);
-
-  try {
-    const { rows } = await pool.query(`
-      SELECT DATE(placed_at) as date,
-             COUNT(*) as orders,
-             COALESCE(SUM(total),0) as revenue
-      FROM orders
-      WHERE placed_at >= NOW() - INTERVAL '30 days'
-      GROUP BY DATE(placed_at)
-      ORDER BY date ASC
-    `);
-    const result = rows.map(r => ({ date: r.date, orders: parseInt(r.orders), revenue: parseFloat(r.revenue) }));
-    await cacheSet('stats:daily', result, 120);
-    res.json(result);
-  } catch (e) { console.error(e); res.status(500).json({ error: 'Failed' }); }
-});
-
-// Analytics Dashboard Endpoint
-app.get('/api/owner/analytics', authenticateOwner, async (req, res) => {
-  try {
-    const { rows: weeklyRows } = await pool.query(`
-      SELECT TO_CHAR(DATE(placed_at), 'Dy') as day, DATE(placed_at) as full_date, COALESCE(SUM(total), 0) as revenue, COUNT(*) as orders
-      FROM orders
-      WHERE placed_at >= NOW() - INTERVAL '6 days'
-      GROUP BY DATE(placed_at)
-      ORDER BY DATE(placed_at) ASC
-    `);
-
-    const { rows: popularRows } = await pool.query(`
-      SELECT oi.name, SUM(oi.qty) as total_qty
-      FROM order_items oi JOIN orders o ON oi.order_id = o.id
-      WHERE o.placed_at >= NOW() - INTERVAL '30 days'
-      GROUP BY oi.name
-      ORDER BY total_qty DESC
-      LIMIT 10
-    `);
-
-    const { rows: townRows } = await pool.query(`
-      SELECT town as name, COUNT(*) as value
-      FROM orders
-      WHERE town IS NOT NULL
-      GROUP BY town
-      ORDER BY value DESC
-    `);
-
-    const { rows: topCustomerRows } = await pool.query(`
-      SELECT customer_name as name, phone, COUNT(*) as orders, SUM(total) as spent, MAX(placed_at) as last_order
-      FROM orders
-      WHERE customer_name IS NOT NULL AND customer_name != ''
-      GROUP BY customer_name, phone
-      ORDER BY spent DESC
-      LIMIT 5
-    `);
-
-    res.json({
-      weeklyTrends: weeklyRows.map(r => ({ ...r, revenue: parseFloat(r.revenue), orders: parseInt(r.orders) })),
-      popularVegetables: popularRows.map(r => ({ name: r.name, total_qty: parseFloat(r.total_qty) })),
-      townHeatmap: townRows.map(r => ({ name: r.name, value: parseInt(r.value) })),
-      topCustomers: topCustomerRows.map(r => ({ name: r.name, phone: r.phone, orders: parseInt(r.orders), spent: parseFloat(r.spent), lastOrder: r.last_order }))
+      weeklyTrends: weeklyRowsR.rows.map(r => ({ ...r, revenue: parseFloat(r.revenue), orders: parseInt(r.orders) })),
+      popularVegetables: popularRowsR.rows.map(r => ({ name: r.name, total_qty: parseFloat(r.total_qty) })),
+      townHeatmap: townRowsR.rows.map(r => ({ name: r.name, value: parseInt(r.value) })),
+      topCustomers: topCustomerRowsR.rows.map(r => ({ name: r.name, phone: r.phone, orders: parseInt(r.orders), spent: parseFloat(r.spent), lastOrder: r.last_order })),
+      dailyData: dailyDataR.rows.map(r => ({ date: r.date, orders: parseInt(r.orders), revenue: parseFloat(r.revenue) }))
     });
   } catch(e) {
     console.error(e); res.status(500).json({ error: 'Failed to fetch analytics' });
+  }
+});
+
+app.get('/api/owner/expenses', authenticateOwner, async (req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT * FROM daily_expenses ORDER BY date DESC');
+    res.json(rows.map(r => ({ ...r, amount: Number(r.amount) })));
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Failed to fetch expenses' });
+  }
+});
+
+app.post('/api/owner/expenses', authenticateOwner, [
+  body('date').isString().notEmpty(),
+  body('amount').isNumeric(),
+  body('notes').optional().isString()
+], validate, async (req, res) => {
+  try {
+    const { date, amount, notes } = req.body;
+    const { rows } = await pool.query(
+      'INSERT INTO daily_expenses (date, amount, notes) VALUES ($1, $2, $3) RETURNING *',
+      [date, amount, notes]
+    );
+    res.json(rows[0]);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Failed to add expense' });
   }
 });
 
