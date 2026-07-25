@@ -667,7 +667,9 @@ export default function OwnerDashboard({
                     </div>
                     <div style={{ flex: 1 }}>
                       <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: '#0f172a' }}>{lang === 'te' && item.te ? item.te : item.name}</p>
-                      <p style={{ margin: '2px 0 0', fontSize: 12, color: '#64748b' }}>{item.qty} {item.mode === 'wholesale' ? 'kg (Wholesale)' : 'units'}</p>
+                      <p style={{ margin: '2px 0 0', fontSize: 12, color: '#64748b' }}>
+                        {item.qty} {item.mode === 'wholesale' ? 'kg (Wholesale)' : (products?.find(p => p.name === item.name)?.unit || 'kg')}
+                      </p>
                     </div>
                     <div style={{ textAlign: 'right' }}>
                       <p style={{ margin: 0, fontSize: 15, fontWeight: 800, color: '#059669' }}>{money(item.price)}</p>
@@ -1407,7 +1409,19 @@ export default function OwnerDashboard({
                   value={newCoupon.minOrder} onChange={e => setNewCoupon(p => ({ ...p, minOrder: e.target.value }))} />
               </div>
               <div style={{ display: 'flex', alignItems: 'flex-end' }}>
-                <button style={styles.primaryBtn} onClick={addCoupon} disabled={!newCoupon.code || !newCoupon.discountValue}>Create</button>
+                <button 
+                  style={{ 
+                    ...styles.primaryBtn, 
+                    width: 'auto', 
+                    padding: '12px 20px', 
+                    opacity: (!newCoupon.code || !newCoupon.discountValue) ? 0.5 : 1,
+                    cursor: (!newCoupon.code || !newCoupon.discountValue) ? 'not-allowed' : 'pointer'
+                  }} 
+                  onClick={addCoupon} 
+                  disabled={!newCoupon.code || !newCoupon.discountValue}
+                >
+                  Create
+                </button>
               </div>
             </div>
             {couponMsg && <p style={styles.savedToast}>{couponMsg}</p>}

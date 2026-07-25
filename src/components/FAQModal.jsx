@@ -7,7 +7,14 @@ export default function FAQModal({ open, onClose, t }) {
   return (
     <>
       <div style={styles.overlay} onClick={onClose} />
-      <div style={{ ...styles.paymentModal, ...styles.paymentModalOpen, height: 'auto', maxHeight: '80vh', top: '50%', transform: 'translate(-50%, -50%)' }}>
+      <div style={{ 
+        ...styles.paymentModal, 
+        ...styles.paymentModalOpen, 
+        height: 'auto', maxHeight: '80vh', 
+        top: '50%', left: '50%', right: 'auto', bottom: 'auto',
+        width: '90%', maxWidth: 400, borderRadius: 20,
+        transform: 'translate(-50%, -50%)' 
+      }}>
         <div style={styles.paymentModalHeader}>
           <h3 style={styles.paymentModalTitle}><HelpCircle size={18} /> FAQ & Delivery Area</h3>
           <button style={styles.iconBtn} onClick={onClose}><X size={20} /></button>

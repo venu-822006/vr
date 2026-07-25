@@ -3,9 +3,9 @@ import { Home, Search, ShoppingCart, User } from "lucide-react";
 import { styles } from "../styles/styles";
 
 const TABS = [
-  { key: "home", icon: Home, labelKey: "navHome" },
+  { key: "catalog", icon: Home, labelKey: "navHome" },
   { key: "search", icon: Search, labelKey: "navSearch" },
-  { key: "cart", icon: ShoppingCart, labelKey: "navCart" },
+  { key: "checkout", icon: ShoppingCart, labelKey: "navCart" },
   { key: "account", icon: User, labelKey: "navAccount" },
 ];
 
@@ -33,14 +33,21 @@ export default function BottomNav({ activeView, onNavigate, cartCount, t }) {
               ...(isActive ? navStyles.tabActive : {}),
               ...(isHovered && !isActive ? navStyles.tabHover : {}),
             }}
-            onClick={() => onNavigate(key)}
+            onClick={() => {
+              if (key === "search") {
+                onNavigate("catalog");
+                setTimeout(() => document.querySelector("input[type='text']")?.focus(), 100);
+              } else {
+                onNavigate(key);
+              }
+            }}
             onMouseEnter={() => setHoveredTab(key)}
             onMouseLeave={() => setHoveredTab(null)}
             aria-label={t[labelKey] || key}
           >
             <div style={navStyles.iconWrap}>
               <Icon size={iconSize} color={color} strokeWidth={isActive ? 2.5 : 2} />
-              {key === "cart" && cartCount > 0 && (
+              {key === "checkout" && cartCount > 0 && (
                 <span style={navStyles.badge}>{cartCount > 99 ? "99+" : cartCount}</span>
               )}
             </div>
