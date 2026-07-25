@@ -19,11 +19,11 @@ export default function CartDrawer({ t, open, onClose, items, lang, onStep, subt
               <span style={{ fontSize: 22 }}>{i.product.emoji}</span>
               <div style={{ flex: 1 }}>
                 <div style={{ fontWeight: 600 }}>{pname(i.product, lang)} {i.mode === "wholesale" && <span style={styles.wholesaleTag}>{t.wholesale}</span>}</div>
-                <div style={{ fontSize: 12, color: "var(--ink-soft)" }}>{money(i.price)} / kg</div>
+                <div style={{ fontSize: 12, color: "var(--ink-soft)" }}>{money(i.price)} / {i.mode === "wholesale" ? "kg" : (i.product.unit || "kg")}</div>
               </div>
               <div style={styles.stepper}>
                 <button style={styles.stepBtn} onClick={() => onStep(i.product, i.mode, -1)}><Minus size={12} /></button>
-                <span style={styles.stepQty}>{i.qty}</span>
+                <span style={styles.stepQty}>{i.qty}{i.mode === "wholesale" ? "kg" : (i.product.unit === "bunch" ? "" : (i.product.unit || "kg"))}</span>
                 <button style={styles.stepBtn} onClick={() => onStep(i.product, i.mode, 1)}><Plus size={12} /></button>
               </div>
             </div>
@@ -40,7 +40,7 @@ export default function CartDrawer({ t, open, onClose, items, lang, onStep, subt
                     <div key={p.id} style={{ minWidth: 100, border: "1px solid var(--sage-line)", borderRadius: 12, padding: 8, background: "#fff", display: "flex", flexDirection: "column", alignItems: "center" }}>
                       <span style={{ fontSize: 24, marginBottom: 4 }}>{p.emoji}</span>
                       <span style={{ fontSize: 12, fontWeight: 600, textAlign: "center", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", width: "100%" }}>{pname(p, lang)}</span>
-                      <span style={{ fontSize: 11, color: "var(--ink-soft)", marginBottom: 6 }}>{money(p.price)}/kg</span>
+                      <span style={{ fontSize: 11, color: "var(--ink-soft)", marginBottom: 6 }}>{money(p.price)}/{p.unit || 'kg'}</span>
                       <button 
                         style={{ ...styles.secondaryBtnSmall, width: "100%", padding: "4px 0", fontSize: 11 }}
                         onClick={() => onStep(p, "retail", 1)}

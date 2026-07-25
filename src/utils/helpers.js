@@ -1,6 +1,6 @@
 import { CATEGORIES, TOWNS } from "../data/constants";
 
-export const money = (n) => `₹${Number(n).toFixed(0)}`;
+export const money = (n) => `₹${Number(n) % 1 !== 0 ? Number(n).toFixed(2) : Number(n)}`;
 
 export const catLabel = (key, lang) => (CATEGORIES.find((c) => c.key === key) || {})[lang] || key;
 

@@ -557,7 +557,7 @@ export default function OwnerDashboard({
 
   // ---- Stat card helper ----------------------------------------------------
   const StatCard = ({ label, value, sub, bg = '#f8fafc', border = '#e2e8f0', color = '#0f172a' }) => (
-    <div style={{ flex: 1, minWidth: 140, padding: '14px 16px', backgroundColor: bg, borderRadius: 10, border: `1px solid ${border}` }}>
+    <div className="stat-card" style={{ flex: 1, minWidth: 140, padding: '18px 20px', backgroundColor: bg, borderRadius: 14, border: `1px solid ${border}`, boxShadow: 'var(--shadow-soft)' }}>
       <p style={{ margin: 0, fontSize: 12, color: '#64748b', fontWeight: 500 }}>{label}</p>
       <h3 style={{ margin: '4px 0 0', fontSize: 22, color, fontWeight: 700 }}>{value}</h3>
       {sub && <p style={{ margin: '2px 0 0', fontSize: 11, color: '#94a3b8' }}>{sub}</p>}
@@ -641,13 +641,14 @@ export default function OwnerDashboard({
         {selectedOrderItems && (
           <div style={{
             position: 'fixed', inset: 0, zIndex: 1000,
-            background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(6px)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16
+            background: 'rgba(15,23,42,0.4)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
+            animation: 'fadeIn 0.3s ease'
           }} onClick={() => setSelectedOrderItems(null)}>
-            <div style={{
-              background: '#fff', borderRadius: 20, width: '100%', maxWidth: 460,
-              maxHeight: '88vh', overflow: 'hidden', boxShadow: '0 32px 100px rgba(0,0,0,0.25)',
-              display: 'flex', flexDirection: 'column'
+            <div className="cart-popup" style={{
+              background: 'var(--glass-bg)', borderRadius: 24, width: '100%', maxWidth: 460,
+              maxHeight: '88vh', overflow: 'hidden', boxShadow: '0 32px 100px rgba(0,0,0,0.3)', border: '1px solid var(--glass-border)',
+              display: 'flex', flexDirection: 'column', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)'
             }} onClick={e => e.stopPropagation()}>
               <div style={{ padding: '20px 24px 16px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div>
@@ -749,7 +750,7 @@ export default function OwnerDashboard({
               </div>
             ) : (
               <div style={styles.ownerTableWrap}>
-                <table style={styles.ownerTable}>
+                <table className="ownerTable" style={styles.ownerTable}>
                   <thead>
                     <tr>
                       <th style={styles.ownerTh}>{t.colOrderId}</th>
@@ -921,7 +922,7 @@ export default function OwnerDashboard({
               <p style={{ color: 'var(--ink-soft)', fontSize: 13 }}>No orders yet — data will appear here.</p>
             ) : (
               <div style={styles.ownerTableWrap}>
-                <table style={styles.ownerTable}>
+                <table className="ownerTable" style={styles.ownerTable}>
                   <thead><tr>
                     <th style={styles.ownerTh}>Product</th>
                     <th style={styles.ownerTh}>Qty Sold</th>
@@ -1090,7 +1091,7 @@ export default function OwnerDashboard({
                 Top 5 Customers
               </h3>
               <div style={styles.ownerTableWrap}>
-                <table style={styles.ownerTable}>
+                <table className="ownerTable" style={styles.ownerTable}>
                   <thead><tr>
                     <th style={styles.ownerTh}>#</th>
                     <th style={styles.ownerTh}>Customer</th>

@@ -186,7 +186,7 @@ export default function Checkout({
             <div key={i.key} style={styles.checkoutItemRow}>
               <span style={styles.checkoutItemName}>
                 <span style={{ fontSize: 18 }} aria-hidden="true">{i.product.emoji}</span>
-                {pname(i.product, lang)} × {i.qty}kg{i.mode === "wholesale" ? ` (${t.wholesale})` : ""}
+                {pname(i.product, lang)} × {i.qty}{i.mode === "wholesale" ? "kg" : (i.product.unit === "bunch" ? "" : (i.product.unit || "kg"))}{i.mode === "wholesale" ? ` (${t.wholesale})` : ""}
               </span>
               <span style={styles.checkoutItemPrice}>{money(i.price * i.qty)}</span>
             </div>

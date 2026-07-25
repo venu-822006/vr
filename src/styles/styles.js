@@ -14,9 +14,19 @@ export const fontFace = `
   @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
   @keyframes shake { 10%, 90% { transform: translateX(-1px); } 20%, 80% { transform: translateX(2px); } 30%, 50%, 70% { transform: translateX(-4px); } 40%, 60% { transform: translateX(4px); } }
   @keyframes spin { to { transform: rotate(360deg); } }
-  @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes slideUp { 0% { opacity: 0; transform: translateY(20px) scale(0.98); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
+  @keyframes modalIn { 0% { opacity: 0; transform: scale(0.95) translateY(10px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
+  @keyframes shimmerGradient { 0% { background-position: 200% center; } 100% { background-position: -200% center; } }
   @keyframes slideRight { from { opacity: 0; transform: translateX(-15px); } to { opacity: 1; transform: translateX(0); } }
   @keyframes popIn { 0% { transform: scale(0.8); opacity: 0; } 70% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+  
+
+  .ownerTable tr { transition: all 0.2s ease; }
+  .ownerTable tr:hover { background-color: rgba(21, 128, 61, 0.04) !important; }
+  .cart-popup { animation: modalIn 0.35s cubic-bezier(0.2, 1, 0.3, 1); }
+  .stat-card { transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); position: relative; overflow: hidden; }
+  .stat-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover); border-color: var(--leaf-mid) !important; }
+  .stat-card::after { content: ""; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 100%); pointer-events: none; }
   
   /* Mobile Responsiveness Overrides */
   @media (max-width: 480px) {
@@ -49,15 +59,25 @@ export const fontFace = `
 `;
 
 export const vars = {
-  "--sage-bg": "#EEF1E7", "--sage-line": "#D3DBC7", "--leaf-deep": "#28502F", "--leaf-mid": "#4C7A44",
-  "--mustard": "#C98A1E", "--tomato": "#C1440E", "--ink": "#26281F", "--ink-soft": "#6C715D", "--paper": "#FBFAF5",
-  "--primary": "#16a34a", "--danger": "#dc2626", "--border": "#D3DBC7", "--bg": "#EEF1E7",
+  "--sage-bg": "#F5F7F2", "--sage-line": "#E2E8DF", "--leaf-deep": "#1D3B22", "--leaf-mid": "#3A6335",
+  "--mustard": "#D99516", "--tomato": "#D14A10", "--ink": "#1E201B", "--ink-soft": "#5B6153", "--paper": "#FFFFFF",
+  "--primary": "#15803d", "--danger": "#dc2626", "--border": "#E2E8DF", "--bg": "#F5F7F2",
+  "--glass-bg": "rgba(255, 255, 255, 0.75)",
+  "--glass-border": "rgba(255, 255, 255, 0.4)",
+  "--shadow-soft": "0 8px 30px rgba(0,0,0,0.04)",
+  "--shadow-hover": "0 16px 40px rgba(29,59,34,0.08)",
+  "--shadow-glow": "0 8px 24px rgba(58,99,53,0.25)"
 };
 
 export const darkVars = {
-  "--sage-bg": "#1a1f16", "--sage-line": "#2d3328", "--leaf-deep": "#4ade80", "--leaf-mid": "#22c55e",
-  "--mustard": "#fbbf24", "--tomato": "#f97316", "--ink": "#e8ede0", "--ink-soft": "#9ca38c", "--paper": "#232922",
-  "--primary": "#4ade80", "--danger": "#ef4444", "--border": "#2d3328", "--bg": "#1a1f16",
+  "--sage-bg": "#0D110C", "--sage-line": "#252B22", "--leaf-deep": "#4ade80", "--leaf-mid": "#22c55e",
+  "--mustard": "#FBBF24", "--tomato": "#F97316", "--ink": "#F3F5F1", "--ink-soft": "#A1A896", "--paper": "#161B14",
+  "--primary": "#22c55e", "--danger": "#ef4444", "--border": "#252B22", "--bg": "#0D110C",
+  "--glass-bg": "rgba(22, 27, 20, 0.75)",
+  "--glass-border": "rgba(255, 255, 255, 0.08)",
+  "--shadow-soft": "0 8px 30px rgba(0,0,0,0.3)",
+  "--shadow-hover": "0 16px 40px rgba(0,0,0,0.5)",
+  "--shadow-glow": "0 8px 24px rgba(34,197,94,0.25)"
 };
 
 export const styles = {
@@ -86,8 +106,8 @@ export const styles = {
   backBtnHover: { background: "rgba(40,80,47,0.08)" },
   searchWrap: { flex: 1, display: "flex", alignItems: "center", gap: 8, background: "var(--sage-bg)", border: "1px solid var(--sage-line)", borderRadius: 20, padding: "8px 14px", maxWidth: 420 },
   searchInput: { border: "none", background: "transparent", flex: 1, fontSize: 14, color: "var(--ink)" },
-  cartBtn: { position: "relative", background: "var(--leaf-deep)", color: "#fff", border: "none", borderRadius: "50%", width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, transition: "all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)", boxShadow: "0 2px 8px rgba(40,80,47,0.15)" },
-  cartBtnHover: { transform: "scale(1.1) rotate(5deg)", boxShadow: "0 6px 16px rgba(40,80,47,0.3)" },
+  cartBtn: { position: "relative", background: "var(--leaf-deep)", color: "#fff", border: "none", borderRadius: "50%", width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, transition: "all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)", boxShadow: "var(--shadow-soft)" },
+  cartBtnHover: { transform: "scale(1.1) rotate(5deg)", boxShadow: "var(--shadow-glow)" },
   iconCircleBtn: { background: "var(--sage-bg)", color: "var(--leaf-deep)", border: "1px solid var(--sage-line)", borderRadius: "50%", width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, transition: "all 0.2s ease" },
   iconCircleBtnHover: { background: "#fff", borderColor: "var(--leaf-mid)", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" },
   cartBadge: { position: "absolute", top: -4, right: -4, background: "var(--tomato)", color: "#fff", fontSize: 10, fontWeight: 700, borderRadius: 10, minWidth: 16, height: 16, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 3px" },
@@ -108,7 +128,7 @@ export const styles = {
   emptyState: { gridColumn: "1 / -1", textAlign: "center", color: "var(--ink-soft)", padding: "40px 0", animation: "fadeIn 0.5s ease" },
 
   card: { background: "var(--paper)", border: "1px solid var(--sage-line)", borderRadius: 14, padding: 14, display: "flex", flexDirection: "column", gap: 10, position: "relative", transition: "all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)", animation: "slideUp 0.4s ease backwards" },
-  cardHover: { borderColor: "var(--leaf-mid)", boxShadow: "0 10px 24px rgba(40,80,47,0.12)", transform: "translateY(-6px)" },
+  cardHover: { borderColor: "var(--leaf-mid)", boxShadow: "var(--shadow-hover)", transform: "translateY(-6px)" },
   favoriteBtn: { position: "absolute", top: 10, right: 10, background: "rgba(255,255,255,0.85)", border: "1px solid var(--sage-line)", borderRadius: "50%", width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", zIndex: 2, transition: "all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)" },
   favoriteBtnHover: { background: "#fff", boxShadow: "0 4px 12px rgba(220,38,38,0.2)", transform: "scale(1.15)", color: "var(--danger)" },
   favoriteBtnStatic: { background: "rgba(255,255,255,0.85)", border: "1px solid var(--sage-line)", borderRadius: "50%", width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "all 0.2s ease" },
@@ -124,7 +144,7 @@ export const styles = {
   perUnit: { fontWeight: 500, fontSize: 11, opacity: 0.75 },
   cardFooter: {},
   addBtn: { width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: "var(--leaf-deep)", color: "#fff", border: "none", borderRadius: 10, padding: "8px 0", fontWeight: 600, fontSize: 13, cursor: "pointer", transition: "all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)", boxShadow: "0 2px 6px rgba(40,80,47,0.15)" },
-  addBtnHover: { transform: "translateY(-2px) scale(1.02)", boxShadow: "0 6px 16px rgba(40,80,47,0.3)" },
+  addBtnHover: { transform: "translateY(-2px) scale(1.02)", boxShadow: "var(--shadow-glow)" },
   addBtnDisabled: { background: "var(--sage-line)", color: "var(--ink-soft)", cursor: "not-allowed", boxShadow: "none" },
   stepper: { display: "flex", alignItems: "center", justifyContent: "space-between", background: "var(--sage-bg)", borderRadius: 10, padding: "4px 6px" },
   stepBtn: { background: "#fff", border: "1px solid var(--sage-line)", borderRadius: 6, width: 24, height: 24, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "all 0.2s ease" },
@@ -146,8 +166,8 @@ export const styles = {
   drawerFooter: { padding: "12px 18px 20px", borderTop: "1px solid var(--sage-line)" },
   wholesaleTag: { fontSize: 10, background: "#FFF6DE", color: "#7A5410", padding: "1px 6px", borderRadius: 8, marginLeft: 6, fontWeight: 700 },
 
-  primaryBtn: { width: "100%", background: "var(--leaf-deep)", color: "#fff", border: "none", borderRadius: 10, padding: "12px 0", fontWeight: 700, fontSize: 14.5, cursor: "pointer", marginTop: 10, transition: "all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)", boxShadow: "0 4px 12px rgba(40,80,47,0.15)" },
-  primaryBtnHover: { transform: "translateY(-3px) scale(1.01)", boxShadow: "0 8px 20px rgba(40,80,47,0.3)" },
+  primaryBtn: { width: "100%", background: "var(--leaf-deep)", color: "#fff", border: "none", borderRadius: 10, padding: "12px 0", fontWeight: 700, fontSize: 14.5, cursor: "pointer", marginTop: 10, transition: "all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)", boxShadow: "var(--shadow-soft)" },
+  primaryBtnHover: { transform: "translateY(-3px) scale(1.01)", boxShadow: "var(--shadow-glow)" },
   secondaryBtn: { flex: 1, background: "var(--sage-bg)", color: "var(--ink)", border: "1px solid var(--sage-line)", borderRadius: 10, padding: "12px 0", fontWeight: 600, fontSize: 14, cursor: "pointer", transition: "all 0.3s ease" },
   secondaryBtnHover: { background: "#fff", borderColor: "var(--leaf-mid)", boxShadow: "0 4px 12px rgba(0,0,0,0.08)", transform: "translateY(-2px)" },
   secondaryBtnSmall: { display: "flex", alignItems: "center", gap: 6, background: "var(--sage-bg)", color: "var(--ink)", border: "1px solid var(--sage-line)", borderRadius: 8, padding: "7px 12px", fontWeight: 600, fontSize: 12.5, cursor: "pointer", transition: "all 0.2s ease" },
@@ -170,7 +190,7 @@ export const styles = {
   checkoutItemRow: { display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13.5 },
   checkoutItemName: { display: "flex", alignItems: "center", gap: 6, fontWeight: 500 },
   checkoutItemPrice: { fontWeight: 600 },
-  checkoutStickyFooter: { position: "fixed", bottom: 0, left: 0, right: 0, background: "var(--paper)", borderTop: "1px solid var(--sage-line)", padding: "16px 20px", display: "flex", flexDirection: "column", gap: 12, zIndex: 10, boxShadow: "0 -4px 12px rgba(0,0,0,0.05)" },
+  checkoutStickyFooter: { position: "fixed", bottom: 0, left: 0, right: 0, background: "var(--paper)", borderTop: "1px solid var(--sage-line)", padding: "16px 20px", display: "flex", flexDirection: "column", gap: 12, zIndex: 10, boxShadow: "0 -8px 30px rgba(0,0,0,0.04)" },
   checkoutFooterInner: { maxWidth: 560, margin: "0 auto", width: "100%", display: "flex", flexDirection: "column", gap: 12 },
   checkoutPayRow: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 14px", background: "#fff", border: "1px solid var(--sage-line)", borderRadius: 12, cursor: "pointer", transition: "all 0.2s ease" },
   checkoutPayRowHover: { borderColor: "var(--leaf-mid)", boxShadow: "0 2px 8px rgba(40,80,47,0.08)" },
@@ -180,8 +200,8 @@ export const styles = {
   checkoutTotalCol: { display: "flex", flexDirection: "column", justifyContent: "center" },
   checkoutTotalLabel: { fontSize: 11, color: "var(--ink-soft)", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 },
   checkoutTotalAmount: { fontSize: 18, fontWeight: 700, color: "var(--ink)" },
-  checkoutPlaceBtn: { flex: 1, background: "var(--leaf-deep)", color: "#fff", border: "none", borderRadius: 12, padding: "14px 0", fontSize: 15, fontWeight: 700, cursor: "pointer", display: "flex", justifyContent: "center", alignItems: "center", gap: 8, transition: "all 0.2s ease", boxShadow: "0 2px 8px rgba(40,80,47,0.15)" },
-  checkoutPlaceBtnHover: { transform: "translateY(-1px)", boxShadow: "0 6px 16px rgba(40,80,47,0.3)" },
+  checkoutPlaceBtn: { flex: 1, background: "var(--leaf-deep)", color: "#fff", border: "none", borderRadius: 12, padding: "14px 0", fontSize: 15, fontWeight: 700, cursor: "pointer", display: "flex", justifyContent: "center", alignItems: "center", gap: 8, transition: "all 0.2s ease", boxShadow: "var(--shadow-soft)" },
+  checkoutPlaceBtnHover: { transform: "translateY(-1px)", boxShadow: "var(--shadow-glow)" },
   checkoutPlaceBtnDisabled: { background: "var(--sage-line)", color: "var(--ink-soft)", cursor: "not-allowed", boxShadow: "none" },
   paymentModal: { position: "fixed", bottom: 0, left: 0, right: 0, background: "var(--paper)", borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: "24px 20px 40px", zIndex: 20, boxShadow: "0 -10px 40px rgba(0,0,0,0.15)", transform: "translateY(100%)", transition: "transform 0.35s cubic-bezier(0.16, 1, 0.3, 1)" },
   paymentModalOpen: { transform: "translateY(0)" },
