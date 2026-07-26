@@ -19,8 +19,8 @@ export const fontFace = `
   @keyframes shimmerGradient { 0% { background-position: 200% center; } 100% { background-position: -200% center; } }
   @keyframes slideRight { from { opacity: 0; transform: translateX(-15px); } to { opacity: 1; transform: translateX(0); } }
   @keyframes popIn { 0% { transform: scale(0.8); opacity: 0; } 70% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+  @keyframes progress { 0% { transform: translateX(-100%); } 50% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
   
-
   .ownerTable tr { transition: all 0.2s ease; }
   .ownerTable tr:hover { background-color: rgba(21, 128, 61, 0.04) !important; }
   .cart-popup { animation: modalIn 0.35s cubic-bezier(0.2, 1, 0.3, 1); }
@@ -245,6 +245,20 @@ export const styles = {
   textInputFocus: { borderColor: "var(--leaf-mid)", boxShadow: "0 0 0 3px rgba(76,122,68,0.1)" },
   hintText: { fontSize: 12, color: "var(--ink-soft)", marginTop: 10, fontStyle: "italic" },
   errorText: { fontSize: 13, color: "var(--tomato)", fontWeight: 600, marginTop: 8, backgroundColor: "rgba(193,68,14,0.08)", padding: "8px 10px", borderRadius: 6, border: "1px solid rgba(193,68,14,0.2)", animation: "shake 0.4s ease" },
+  inlineError: { fontSize: 11.5, color: "var(--tomato)", fontWeight: 600, marginTop: 4, display: "block" },
+  
+  statusModal: { position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)", background: "var(--paper)", borderRadius: 24, padding: "32px 24px 24px", zIndex: 70, width: "90%", maxWidth: 340, display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", boxShadow: "0 20px 60px rgba(0,0,0,0.15)" },
+  statusIconWrap: { width: 80, height: 80, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20, position: "relative" },
+  statusIconBg: { position: "absolute", inset: 0, borderRadius: "50%", opacity: 0.15 },
+  statusTitle: { fontSize: 20, fontWeight: 700, color: "var(--ink)", margin: "0 0 10px" },
+  statusDesc: { fontSize: 14, color: "var(--ink-soft)", margin: "0 0 24px", lineHeight: 1.5 },
+  statusBtn: { width: "100%", border: "none", borderRadius: 12, padding: "14px 0", fontSize: 15, fontWeight: 700, cursor: "pointer", transition: "transform 0.2s ease, box-shadow 0.2s ease" },
+  
+  emptyStateWrap: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "60px 20px", textAlign: "center" },
+  emptyStateIcon: { width: 80, height: 80, color: "var(--sage-line)", marginBottom: 16 },
+  emptyStateTitle: { fontSize: 18, fontWeight: 700, color: "var(--ink)", margin: "0 0 8px" },
+  emptyStateDesc: { fontSize: 14, color: "var(--ink-soft)", margin: "0 0 24px" },
+
   linkBtn: { background: "none", border: "none", color: "var(--leaf-deep)", fontWeight: 700, fontSize: 13, cursor: "pointer", transition: "all 0.2s ease", textDecoration: "none", padding: "2px 0" },
   linkBtnHover: { color: "var(--leaf-mid)" },
   otpFooterRow: { display: "flex", alignItems: "center", justifyContent: "center", gap: 4 },

@@ -1,0 +1,9 @@
+{
+  "name": "webcmd-plugin-quickmart",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "A webcmd plugin: quickmart",
+  "peerDependencies": {
+    "@agentrhq/webcmd": ">=0.4.1"
+  }
+}

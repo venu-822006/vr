@@ -390,10 +390,14 @@ export default function LoginScreen({ lang, setLang, onCustomerLogin, onOwnerLog
           <div style={styles.loginForm} key="owner">
             <label style={styles.inputLabel}><User size={13} /> {t.ownerUserPh}</label>
             <input style={styles.textInput} placeholder={t.ownerUserPh} value={ownerUser} onChange={(e) => setOwnerUser(e.target.value)} />
+            {ownerUser.length > 0 && ownerUser.length < 3 && <span style={styles.inlineError}>Username must be at least 3 characters</span>}
+            
             <label style={styles.inputLabel}><KeyRound size={13} /> {t.ownerPassPh}</label>
             <PasswordField value={ownerPass} onChange={(e) => setOwnerPass(e.target.value)} placeholder={t.ownerPassPh} t={t} />
+            {ownerPass.length > 0 && ownerPass.length < 4 && <span style={styles.inlineError}>Password must be at least 4 characters</span>}
+            
             {error && <p style={styles.errorText} key={error}>{error}</p>}
-            <button 
+            <button  
               style={{ ...styles.primaryBtn, ...(hoveredPrimaryBtn ? styles.primaryBtnHover : {}) }} 
               disabled={!ownerUser || !ownerPass || checkingOwner} 
               onClick={submitOwner}

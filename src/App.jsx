@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { ShoppingCart } from "lucide-react";
+import { ShoppingCart, Search, PackageOpen } from "lucide-react";
 import { io } from "socket.io-client";
 
 import { styles, fontFace, vars, darkVars } from "./styles/styles";
@@ -34,6 +34,8 @@ import DarkModeToggle from "./components/DarkModeToggle";
 import SearchSuggestions from "./components/SearchSuggestions";
 import FrequentlyBought from "./components/FrequentlyBought";
 import ImageLightbox from "./components/ImageLightbox";
+import StatusModal from "./components/StatusModal";
+import NetworkOverlay from "./components/NetworkOverlay";
 import { ProductRating, ReviewModal } from "./components/ReviewSystem";
 import {
   getCustomerRecord, updateCustomerName, addAddress, removeAddress,
@@ -115,10 +117,18 @@ export default function App({ initialProducts = [] }) {
 
   const [allProducts, setAllProducts] = useState(initialProducts);
   const [loadingProducts, setLoadingProducts] = useState(initialProducts.length === 0);
+  
+  // New UI states
+  const [slowNetwork, setSlowNetwork] = useState(false);
+  const [statusModal, setStatusModal] = useState({ open: false, type: 'success', title: '', message: '', btnText: '' });
 
   const loadProducts = async () => {
+    let slowTimer = setTimeout(() => setSlowNetwork(true), 3000);
     try {
       const res = await fetch('/api/products');
+      clearTimeout(slowTimer);
+      setSlowNetwork(false);
+      
       if (res.ok) {
         const data = await res.json();
         const safeData = data.map(p => {
@@ -132,6 +142,8 @@ export default function App({ initialProducts = [] }) {
         return;
       }
     } catch (err) {
+      clearTimeout(slowTimer);
+      setSlowNetwork(false);
       console.warn("Backend offline. Loading offline products catalog.");
     } 
     
@@ -405,6 +417,13 @@ export default function App({ initialProducts = [] }) {
     setCartOpen(false);
     setPlacingOrder(false);
     setShowConfetti(true);
+    setStatusModal({
+      open: true,
+      type: 'success',
+      title: 'Order Placed Successfully!',
+      message: 'Your order has been confirmed and is being processed.',
+      btnText: 'Track Order'
+    });
     setTimeout(() => setShowConfetti(false), 5000);
   };
 
@@ -625,8 +644,15 @@ export default function App({ initialProducts = [] }) {
                     />
                   ))
                 ) : (
-                  <div style={styles.emptyState}>
-                    <p>{t.noMatch(query)}</p>
+                  <div style={{ ...styles.formGridFull, display: 'flex', justifyContent: 'center' }}>
+                    <div style={styles.emptyStateWrap}>
+                      <Search style={styles.emptyStateIcon} strokeWidth={1.5} />
+                      <h3 style={styles.emptyStateTitle}>No results found</h3>
+                      <p style={styles.emptyStateDesc}>We couldn't find anything for "{query}".<br/>Try different keywords.</p>
+                      <button style={{ ...styles.statusBtn, width: 'auto', padding: '12px 24px', backgroundColor: 'var(--leaf-deep)' }} onClick={() => { document.querySelector("input[type='text']")?.focus(); }}>
+                        Clear Search
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -732,6 +758,17 @@ export default function App({ initialProducts = [] }) {
           <div style={{ position: 'fixed', top: 80, right: 12, zIndex: 50 }}>
             <DarkModeToggle darkMode={darkMode} setDarkMode={setDarkMode} />
           </div>
+          
+          <NetworkOverlay slowNetwork={slowNetwork} />
+          <StatusModal 
+            open={statusModal.open}
+            type={statusModal.type}
+            title={statusModal.title}
+            message={statusModal.message}
+            buttonText={statusModal.btnText}
+            onAction={() => setStatusModal({ ...statusModal, open: false })}
+            onClose={() => setStatusModal({ ...statusModal, open: false })}
+          />
         </div>
       )}
     </div>

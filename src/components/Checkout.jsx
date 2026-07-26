@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { MapPin, Clock, CreditCard, Wallet, Banknote, ChevronRight, CheckCircle2, ChevronDown, Tag, Truck } from "lucide-react";
+import { MapPin, Clock, CreditCard, Wallet, Banknote, ChevronRight, CheckCircle2, ChevronDown, Tag, Truck, PackageOpen } from "lucide-react";
 import { styles } from "../styles/styles";
 import { TOWNS, SLOTS } from "../data/constants";
 import { townLabel, pname, money } from "../utils/helpers";
@@ -85,8 +85,18 @@ export default function Checkout({
 
   return (
     <div className="checkout-wrap-responsive" style={styles.checkoutWrap}>
-      
-      {/* Customer Details Section (if not fully logged in) */}
+      {cartItems.length === 0 ? (
+        <div style={{ ...styles.emptyStateWrap, minHeight: '60vh' }}>
+          <PackageOpen style={{ ...styles.emptyStateIcon, color: 'var(--leaf-deep)', opacity: 0.2 }} strokeWidth={1.5} size={100} />
+          <h3 style={styles.emptyStateTitle}>No items yet</h3>
+          <p style={styles.emptyStateDesc}>Looks like you haven't added<br/>anything here.</p>
+          <button style={{ ...styles.statusBtn, width: 'auto', padding: '14px 32px', backgroundColor: '#8b5cf6' }} onClick={onCancel}>
+            Add New Item
+          </button>
+        </div>
+      ) : (
+        <>
+          {/* Customer Details Section (if not fully logged in) */}
       {(!customer?.phone || !customer?.name) && (
         <div style={styles.checkoutSection}>
           <h3 style={styles.checkoutHeader}>👤 Contact Details</h3>
@@ -107,6 +117,7 @@ export default function Checkout({
               value={checkoutPhone} 
               onChange={(e) => setCheckoutPhone(e.target.value.replace(/\D/g, '').slice(-10))} 
             />
+            {checkoutPhone.length > 0 && checkoutPhone.length < 10 && <span style={styles.inlineError}>Phone number must be exactly 10 digits</span>}
           </div>
         </div>
       )}
@@ -263,7 +274,8 @@ export default function Checkout({
           <PaymentOption id="card" icon={CreditCard} label={t.card} current={payment} setPayment={(p) => { setPayment(p); setShowPaymentModal(false); }} />
         </div>
       </div>
-
+      </>
+      )}
     </div>
   );
 }

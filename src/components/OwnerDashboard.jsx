@@ -16,6 +16,7 @@ import { pname, townLabel, money } from "../utils/helpers";
 import { getOwnerToken, changeOwnerPassword, changeOwnerUsername } from "../utils/ownerAuth";
 import LangToggle from "./LangToggle";
 import ContactBar from "./ContactBar";
+import StatusModal from "./StatusModal";
 
 const isStrongPassword = (pwd) => pwd.length >= 8 && /[A-Z]/.test(pwd) && /[a-z]/.test(pwd) && /[0-9]/.test(pwd) && /[^A-Za-z0-9]/.test(pwd);
 
@@ -25,6 +26,7 @@ export default function OwnerDashboard({
   const [tab, setTab] = useState("orders");
   const [ownerToken, setOwnerToken] = useState("");
   const [selectedOrderItems, setSelectedOrderItems] = useState(null);
+  const [statusModal, setStatusModal] = useState({ open: false, type: 'success', title: '', message: '', btnText: '' });
 
   useEffect(() => {
     getOwnerToken().then(setOwnerToken);
@@ -1516,6 +1518,53 @@ export default function OwnerDashboard({
             <hr style={{ border: 'none', borderTop: '1px solid #e2e8f0' }} />
 
             <div>
+              <h2 style={styles.ownerSectionTitle}>UI States (Demo)</h2>
+              <p style={{ fontSize: 13, color: "var(--ink-soft)", marginBottom: 12 }}>
+                Test various application states here.
+              </p>
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                <button 
+                  style={{ ...styles.secondaryBtn, width: 'auto', padding: '8px 16px' }} 
+                  onClick={() => setStatusModal({
+                    open: true,
+                    type: 'permission',
+                    title: 'Permission Denied',
+                    message: 'Camera access is blocked. Please enable it in your browser settings to take product photos.',
+                    btnText: 'Close'
+                  })}
+                >
+                  Permission Denied
+                </button>
+                <button 
+                  style={{ ...styles.secondaryBtn, width: 'auto', padding: '8px 16px' }} 
+                  onClick={() => setStatusModal({
+                    open: true,
+                    type: 'expired',
+                    title: 'Session Expired',
+                    message: 'Your login session has expired for security reasons. Please log in again.',
+                    btnText: 'Log In Again'
+                  })}
+                >
+                  Session Expired
+                </button>
+                <button 
+                  style={{ ...styles.secondaryBtn, width: 'auto', padding: '8px 16px' }} 
+                  onClick={() => setStatusModal({
+                    open: true,
+                    type: 'error',
+                    title: 'Something went wrong!',
+                    message: 'We couldn\'t load the data. Please try again.',
+                    btnText: 'Try Again'
+                  })}
+                >
+                  Error State
+                </button>
+              </div>
+            </div>
+            
+            <hr style={{ border: 'none', borderTop: '1px solid #e2e8f0' }} />
+
+            <div>
               <h2 style={styles.ownerSectionTitle}>{t.changePasswordTab}</h2>
               <div style={{ maxWidth: 400 }}>
                 <label style={styles.inputLabel}>{t.currentPasswordLabel || "Current Password"}</label>
@@ -1536,6 +1585,16 @@ export default function OwnerDashboard({
         )}
       </div>
       <ContactBar t={t} />
+      
+      <StatusModal 
+        open={statusModal.open}
+        type={statusModal.type}
+        title={statusModal.title}
+        message={statusModal.message}
+        buttonText={statusModal.btnText}
+        onAction={() => setStatusModal({ ...statusModal, open: false })}
+        onClose={() => setStatusModal({ ...statusModal, open: false })}
+      />
     </div>
   );
 }
