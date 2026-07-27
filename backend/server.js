@@ -1117,9 +1117,13 @@ app.post('/api/orders', publicWriteLimiter,
       (async () => {
         try {
           for (const item of items) {
-            const { rows } = await pool.query('UPDATE products SET stock_qty = stock_qty - $1 WHERE name = $2 RETURNING id, name, stock_qty, low_stock_threshold', [item.qty, item.name]);
+            const { rows } = await pool.query(
+              'UPDATE products SET stock_qty = stock_qty - $1, in_stock = CASE WHEN stock_qty - $1 <= 0 THEN false ELSE in_stock END WHERE name = $2 RETURNING id, name, stock_qty, low_stock_threshold, in_stock', 
+              [item.qty, item.name]
+            );
             if (rows.length > 0) {
               const p = rows[0];
+              io.emit('stock_update', { id: p.id, stockQty: p.stock_qty, inStock: p.in_stock });
               if (p.stock_qty <= p.low_stock_threshold) {
                 // Send push notification to owner
                 const { rows: owners } = await pool.query("SELECT phone FROM push_subscriptions WHERE phone IN (SELECT phone FROM users WHERE role='owner')");

@@ -180,6 +180,10 @@ export default function App({ initialProducts = [] }) {
     socketRef.current = socket;
     socket.on('connect', () => console.log('Socket connected:', socket.id));
     socket.on('connect_error', () => { /* Suppress error to avoid console spam */ });
+    
+    socket.on('stock_update', ({ id, stockQty, inStock }) => {
+      setAllProducts(prev => prev.map(p => p.id === id ? { ...p, stockQty, inStock } : p));
+    });
     return () => socket.disconnect();
   }, []);
 
