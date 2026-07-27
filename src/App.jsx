@@ -171,7 +171,8 @@ export default function App({ initialProducts = [] }) {
     })();
 
     // Socket.IO connection
-    const socket = io({ 
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://vr-backend-tts6.onrender.com';
+    const socket = io(backendUrl, { 
       path: '/socket.io', 
       transports: ['websocket', 'polling'],
       reconnectionAttempts: 3,
@@ -183,6 +184,18 @@ export default function App({ initialProducts = [] }) {
     
     socket.on('stock_update', ({ id, stockQty, inStock }) => {
       setAllProducts(prev => prev.map(p => p.id === id ? { ...p, stockQty, inStock } : p));
+    });
+    
+    socket.on('trending_item', ({ name }) => {
+      setAllProducts(prev => prev.map(p => {
+        if (p.name === name) {
+          return { ...p, trending: true, trendingCount: (p.trendingCount || 0) + 1 };
+        }
+        return p;
+      }));
+      setTimeout(() => {
+        setAllProducts(prev => prev.map(p => p.name === name ? { ...p, trending: false } : p));
+      }, 15000); // clear trending badge after 15 seconds
     });
     return () => socket.disconnect();
   }, []);
@@ -361,6 +374,29 @@ export default function App({ initialProducts = [] }) {
 
   // Quantity stepper: retail vegetables move in quarter-kilo steps, bulk
   // orders move in 5kg jumps, and piece/bunch/100g items step by whole units.
+  const handleWaitlist = async (productId) => {
+    if (!customer?.phone) {
+      setToast({ msg: "Please login to join the waitlist", type: "error" });
+      setTimeout(() => setToast(null), 3000);
+      return;
+    }
+    try {
+      const res = await fetch(`/api/products/${productId}/waitlist`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: customer.phone })
+      });
+      if (res.ok) {
+        setToast({ msg: "You will be notified when it's restocked!", type: "success" });
+      } else {
+        setToast({ msg: "Failed to join waitlist", type: "error" });
+      }
+    } catch (e) {
+      setToast({ msg: "Network error", type: "error" });
+    }
+    setTimeout(() => setToast(null), 3000);
+  };
+
   const step = (product, mode, delta) => {
     if (delta > 0 && mode === "wholesale") {
       setShowConfetti(true);
@@ -592,6 +628,7 @@ export default function App({ initialProducts = [] }) {
                           t={t}
                           onView={handleViewProduct}
                           setReviewProduct={setReviewProduct}
+                          onWaitlist={handleWaitlist}
                         />
                       </div>
                     ))}
@@ -615,6 +652,7 @@ export default function App({ initialProducts = [] }) {
                           t={t}
                           onView={handleViewProduct}
                           setReviewProduct={setReviewProduct}
+                          onWaitlist={handleWaitlist}
                         />
                       </div>
                     ))}
@@ -651,6 +689,7 @@ export default function App({ initialProducts = [] }) {
                       onToggleFavorite={handleToggleFavorite}
                       onView={handleViewProduct}
                       setReviewProduct={setReviewProduct}
+                      onWaitlist={handleWaitlist}
                       style={{ animationDelay: `${index * 0.05}s` }}
                     />
                   ))

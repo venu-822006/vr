@@ -19,6 +19,14 @@ export default function Checkout({
   const [couponLoading, setCouponLoading] = useState(false);
   const [addressLabel, setAddressLabel] = useState("Home");
   const [substitutionPref, setSubstitutionPref] = useState("substitute");
+  const [slotAvailability, setSlotAvailability] = useState({});
+
+  useEffect(() => {
+    fetch('/api/slots/availability')
+      .then(r => r.json())
+      .then(data => setSlotAvailability(data))
+      .catch(e => console.error("Failed to load slots:", e));
+  }, []);
 
   const discount = couponState?.discount || 0;
   const finalTotal = Math.max(0, total - discount);
@@ -162,11 +170,26 @@ export default function Checkout({
       <div style={styles.checkoutSection}>
         <h3 style={styles.checkoutHeader}><Clock size={18} /> {t.slotTitle}</h3>
         <div style={styles.checkoutSlotRow} role="radiogroup" aria-label="Select delivery slot">
-          {SLOTS.map((s) => (
-            <button type="button" role="radio" aria-checked={slot === s} key={s} style={{ ...styles.checkoutSlotPill, ...(slot === s ? styles.checkoutSlotPillActive : {}) }} onClick={() => setSlot(s)}>
-              {s}
-            </button>
-          ))}
+          {SLOTS.map((s) => {
+            const isFull = (slotAvailability[s] || 0) >= 20;
+            return (
+              <button 
+                type="button" 
+                role="radio" 
+                aria-checked={slot === s} 
+                key={s} 
+                disabled={isFull}
+                style={{ 
+                  ...styles.checkoutSlotPill, 
+                  ...(slot === s ? styles.checkoutSlotPillActive : {}),
+                  ...(isFull ? { opacity: 0.5, cursor: 'not-allowed', background: '#e5e7eb', color: '#9ca3af', border: '1px solid #d1d5db' } : {})
+                }} 
+                onClick={() => !isFull && setSlot(s)}
+              >
+                {s} {isFull && "(Full)"}
+              </button>
+            );
+          })}
         </div>
       </div>
 

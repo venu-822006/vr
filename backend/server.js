@@ -442,6 +442,13 @@ const initDb = async () => {
         notes TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )`,
+      `CREATE TABLE IF NOT EXISTS waitlists (
+        id SERIAL PRIMARY KEY,
+        product_id INTEGER REFERENCES products(id) ON DELETE CASCADE,
+        phone VARCHAR(20) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(product_id, phone)
+      )`,
     ];
     for (const sql of migrations) {
       await client.query(sql).catch(e => console.warn('Migration skipped:', e.message));
@@ -845,6 +852,18 @@ app.put('/api/products/:id', authenticateOwner,
         ['UPDATE_PRODUCT', req.params.id, JSON.stringify({ oldPrice: oldProduct?.price, newPrice: price, stockQty })]
       );
 
+      // Notify Waitlist
+      if (inStock === true || (stockQty !== undefined && stockQty > 0)) {
+        const { rows: waiters } = await pool.query('SELECT phone FROM waitlists WHERE product_id=$1', [req.params.id]);
+        if (waiters.length > 0) {
+          const prodName = name || oldProduct?.name || 'An item';
+          for (const w of waiters) {
+            await sendPushToPhone(w.phone, { title: 'Back in Stock!', body: `${prodName} is now available to order.` });
+          }
+          await pool.query('DELETE FROM waitlists WHERE product_id=$1', [req.params.id]);
+        }
+      }
+
       // Price drop alert
       if (oldProduct && price !== undefined && Number(price) < Number(oldProduct.price)) {
         if (typeof PUSH_ENABLED !== 'undefined' && PUSH_ENABLED) {
@@ -902,6 +921,21 @@ app.post('/api/products/:id/image', authenticateOwner, [param('id').isInt()], va
     }
   }
 );
+
+app.post('/api/products/:id/waitlist', async (req, res) => {
+  const { phone } = req.body;
+  if (!phone) return res.status(400).json({ error: 'Phone required' });
+  try {
+    await pool.query(
+      'INSERT INTO waitlists (product_id, phone) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+      [req.params.id, phone]
+    );
+    res.json({ message: 'Added to waitlist' });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Failed to join waitlist' });
+  }
+});
 
 // =============================================================================
 // USER PROFILE (ADDRESSES)
@@ -1140,6 +1174,12 @@ app.post('/api/orders', publicWriteLimiter,
 
       // Notify owner via Socket.IO
       io.to('owner').emit('new_order', { id, customerName, phone, total, status: 'pending' });
+      
+      // Broadcast trending items to all active users to create live urgency
+      items.forEach(item => {
+         io.emit('trending_item', { name: item.name });
+      });
+
       await cacheDel('stats:main', 'stats:daily');
 
       res.status(201).json({ message: 'Order placed', id });
@@ -1150,6 +1190,25 @@ app.post('/api/orders', publicWriteLimiter,
     } finally { client.release(); }
   }
 );
+
+app.get('/api/slots/availability', async (req, res) => {
+  try {
+    const { rows } = await pool.query(`
+      SELECT slot, COUNT(*) as count 
+      FROM orders 
+      WHERE DATE(placed_at) = CURRENT_DATE 
+      GROUP BY slot
+    `);
+    const availability = {};
+    rows.forEach(r => {
+      availability[r.slot] = parseInt(r.count, 10);
+    });
+    res.json(availability);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Failed to fetch slots' });
+  }
+});
 
 app.get('/api/orders', authenticateOwner, async (req, res) => {
   const { search, status, limit=100, offset=0 } = req.query;
@@ -1349,7 +1408,19 @@ app.get('/api/owner/orders/last/:phone', authenticateOwner, async (req, res) => 
 
 app.post('/api/owner/products/restock', authenticateOwner, async (req, res) => {
   try {
-    await pool.query('UPDATE products SET stock_qty = base_stock, updated_at = CURRENT_TIMESTAMP');
+    await pool.query('UPDATE products SET stock_qty = base_stock, in_stock = true, updated_at = CURRENT_TIMESTAMP');
+    
+    // Notify all waitlisted users
+    const { rows: waiters } = await pool.query(`
+      SELECT w.phone, p.name 
+      FROM waitlists w 
+      JOIN products p ON w.product_id = p.id
+    `);
+    for (const w of waiters) {
+      await sendPushToPhone(w.phone, { title: 'Back in Stock!', body: `${w.name} is now available to order.` });
+    }
+    await pool.query('DELETE FROM waitlists');
+    
     await pool.query(`INSERT INTO audit_logs (action, details) VALUES ('RESTOCK_ALL', '{}')`);
     await cacheDel(...(await redis?.keys('products:*') || []));
     res.json({ message: 'Restocked to base quantities' });
@@ -1512,7 +1583,7 @@ app.get('/api/owner/analytics', authenticateOwner, async (req, res) => {
       dailyData: dailyDataR.rows.map(r => ({ date: r.date, orders: parseInt(r.orders), revenue: parseFloat(r.revenue) }))
     });
   } catch(e) {
-    console.error(e); res.status(500).json({ error: 'Failed to fetch analytics' });
+    console.error(e); res.status(500).json({ error: 'Failed to fetch analytics', details: e.message });
   }
 });
 

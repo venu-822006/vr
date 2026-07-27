@@ -307,7 +307,7 @@ export default function OwnerDashboard({
         body: JSON.stringify({ status })
       });
       loadOrders();
-      loadStats();
+      loadAnalytics();
     } catch (e) { console.error(e); }
   };
 
@@ -342,7 +342,7 @@ export default function OwnerDashboard({
       if (postRes.ok) {
         setPhoneToLog('');
         loadOrders();
-        loadStats();
+        loadAnalytics();
         alert('Order duplicated successfully!');
       }
     } catch (e) {

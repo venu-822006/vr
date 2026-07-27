@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { Plus, Minus, Leaf, Ban, Heart } from "lucide-react";
+import { Plus, Minus, Leaf, Ban, Heart, Bell } from "lucide-react";
 import { styles } from "../styles/styles";
 import { money, pname } from "../utils/helpers";
 import { ProductRating } from "./ReviewSystem";
 
-export default function ProductCard({ p, lang, mode, price, qty, onStep, t, isFavorite, onToggleFavorite, onView, setReviewProduct, style }) {
+export default function ProductCard({ p, lang, mode, price, qty, onStep, t, isFavorite, onToggleFavorite, onView, setReviewProduct, style, onWaitlist }) {
   const [isHovered, setIsHovered] = useState(false);
   const [favBtnHovered, setFavBtnHovered] = useState(false);
   const [stepBtnHovered, setStepBtnHovered] = useState(null);
@@ -42,6 +42,8 @@ export default function ProductCard({ p, lang, mode, price, qty, onStep, t, isFa
         )}
         {outOfStock ? (
           <span style={styles.outOfStockBadge}><Ban size={11} /> {t.outOfStockBadge}</span>
+        ) : p.trending ? (
+          <span style={{ ...styles.organicBadge, background: '#fee2e2', color: '#e11d48', animation: 'pulse 1.5s infinite' }}>🔥 {p.trendingCount || 1} just bought!</span>
         ) : (p.stockQty <= (p.lowStockThreshold || 10) && p.stockQty > 0) ? (
           <span style={{ ...styles.outOfStockBadge, background: '#fef08a', color: '#854d0e' }}>Only {p.stockQty} left!</span>
         ) : p.organic ? (
@@ -74,8 +76,11 @@ export default function ProductCard({ p, lang, mode, price, qty, onStep, t, isFa
       </div>
       <div style={styles.cardFooter}>
         {outOfStock ? (
-          <button style={{ ...styles.addBtn, ...styles.addBtnDisabled }} disabled>
-            <Ban size={14} /> {t.outOfStock}
+          <button 
+            style={{ ...styles.addBtn, backgroundColor: 'var(--amber)', color: '#fff', border: 'none' }} 
+            onClick={() => onWaitlist && onWaitlist(p.id)}
+          >
+            <Bell size={14} /> Notify Me
           </button>
         ) : qty > 0 ? (
           <>
