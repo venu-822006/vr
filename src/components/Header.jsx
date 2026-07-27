@@ -1,8 +1,8 @@
-import { ShoppingCart, Search, ChevronLeft, User, Mic } from "lucide-react";
+import { ShoppingCart, Search, ChevronLeft, User, Mic, Truck } from "lucide-react";
 import { useState } from "react";
 import { styles } from "../styles/styles";
 
-export default function Header({ cartCount, onCartClick, onAccountClick, query, setQuery, showBack, onBack, showSearch, t }) {
+export default function Header({ cartCount, onCartClick, onAccountClick, query, setQuery, showBack, onBack, showSearch, t, activeOrderId, onTrackOrder }) {
   const [isListening, setIsListening] = useState(false);
 
   const startListening = () => {
@@ -72,6 +72,11 @@ export default function Header({ cartCount, onCartClick, onAccountClick, query, 
         {onAccountClick && (
           <button style={styles.iconCircleBtn} onClick={onAccountClick} aria-label="My Account">
             <User size={18} />
+          </button>
+        )}
+        {activeOrderId && (
+          <button style={{ ...styles.iconCircleBtn, backgroundColor: 'var(--sage-bg)', color: 'var(--primary)' }} onClick={onTrackOrder} aria-label="Track Order">
+            <Truck size={18} />
           </button>
         )}
         <button style={styles.cartBtn} onClick={onCartClick} aria-label="Open basket">

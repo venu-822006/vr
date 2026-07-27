@@ -101,6 +101,7 @@ export default function App({ initialProducts = [] }) {
   const [placingOrder, setPlacingOrder] = useState(false);
   const [toast, setToast] = useState(null);
   const [lastOrderStatus, setLastOrderStatus] = useState(null);
+  const [lastOrderItems, setLastOrderItems] = useState([]);
   const socketRef = useRef(null);
   const tokenRef = useRef(null);
 
@@ -413,8 +414,10 @@ export default function App({ initialProducts = [] }) {
 
     setOrderId(newOrderId);
     setLastOrderStatus('pending');
+    setLastOrderItems(cartItems);
     setView("tracking");
     setCartOpen(false);
+    setCart({});
     setPlacingOrder(false);
     setShowConfetti(true);
     setStatusModal({
@@ -482,6 +485,8 @@ export default function App({ initialProducts = [] }) {
   const resetToShopping = () => {
     setCart({});
     setArea("");
+    setOrderId(null);
+    setLastOrderItems([]);
     setView("catalog");
   };
 
@@ -558,6 +563,8 @@ export default function App({ initialProducts = [] }) {
             onBack={() => setView("catalog")}
             showSearch={view === "catalog"}
             t={t}
+            activeOrderId={orderId}
+            onTrackOrder={() => setView("tracking")}
           />
 
           {view === "catalog" && (
@@ -699,7 +706,7 @@ export default function App({ initialProducts = [] }) {
               orderId={orderId}
               stageIndex={stageIndex}
               area={area} town={town} slot={slot} total={total}
-              cartItems={cartItems}
+              cartItems={lastOrderItems}
               onNewOrder={resetToShopping}
               socket={socketRef.current}
             />
