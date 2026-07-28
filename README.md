@@ -10,7 +10,6 @@ The application is split into a **Frontend** (Next.js) and a **Backend** (Node.j
 - **Backend (API & Worker):** [Render](https://render.com) (Node.js Web Service & Background Worker)
 - **Database:** [Supabase](https://supabase.com) (PostgreSQL)
 - **Cache/Queues:** [Upstash](https://upstash.com) (Serverless Redis)
-- **Image Storage:** [Cloudflare R2](https://dash.cloudflare.com) (S3-Compatible Object Storage)
 
 ---
 
@@ -62,6 +61,5 @@ To deploy the application to the internet for free, see the `render.yaml` config
 
 1. Create a GitHub repository and push this code.
 2. Provision a free PostgreSQL database on **Supabase** and a free Redis database on **Upstash**.
-3. Create a free R2 bucket on **Cloudflare** for image uploads.
-4. **Deploy Backend:** Go to **Render**, create a new Blueprint deployment, and connect your repository. Fill in the required environment variables when prompted.
-5. **Deploy Frontend:** Go to **Vercel**, connect your repository, and add the `API_URL` environment variable pointing to your Render backend URL.
+3. **Deploy Backend:** Go to **Render**, create a new Blueprint deployment, and connect your repository. Fill in the required environment variables when prompted.
+4. **Deploy Frontend:** Go to **Vercel**, connect your repository, and add the `API_URL` environment variable pointing to your Render backend URL.
