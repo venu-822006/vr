@@ -272,7 +272,9 @@ export default function App({ initialProducts = [] }) {
     try {
       const v = localStorage.getItem("vr-veg-recent");
       if (v) setRecentViews(JSON.parse(v));
-    } catch (e) {}
+    } catch (e) {
+      console.warn('Failed to parse recent views', e);
+    }
   }, []);
 
   const handleViewProduct = (p) => {

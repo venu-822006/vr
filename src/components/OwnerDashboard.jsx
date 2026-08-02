@@ -798,7 +798,7 @@ export default function OwnerDashboard({
                                     body: JSON.stringify({ notes: note })
                                   });
                                   loadOrders();
-                                } catch (e) {}
+                                } catch (e) { console.warn('Failed to add note', e); }
                               }}
                             >
                               {o.customerNotes ? '📝 Edit Note' : '➕ Add Note'}
@@ -838,7 +838,7 @@ export default function OwnerDashboard({
                                     body: JSON.stringify({ issue_reported: !!note, issue_note: note })
                                   });
                                   loadOrders();
-                                } catch (e) {}
+                                } catch (e) { console.warn('Failed to log issue', e); }
                               }}
                             >
                               {o.issue_reported ? 'Issue Logged' : 'Report Issue'}
