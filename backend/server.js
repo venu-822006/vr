@@ -12,7 +12,6 @@ import { createServer } from 'http';
 import { Server as SocketServer } from 'socket.io';
 import multer from 'multer';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
-import { Queue } from 'bullmq';
 import sharp from 'sharp';
 import { createAdapter } from '@socket.io/redis-adapter';
 import path from 'path';
