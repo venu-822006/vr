@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { MapPin } from "lucide-react";
 import { styles } from "../styles/styles";
 import { TOWNS } from "../data/constants";

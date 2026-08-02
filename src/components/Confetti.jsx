@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { useEffect, useState } from "react";
 
 const COLORS = ["#16a34a", "#4ade80", "#fbbf24", "#f97316", "#C98A1E", "#C1440E", "#22c55e", "#ff6b6b"];

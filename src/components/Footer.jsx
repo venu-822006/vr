@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { MapPin, Phone } from "lucide-react";
 import { styles } from "../styles/styles";
 import { WHATSAPP_NUMBER } from "../data/constants";

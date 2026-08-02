@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { useState } from "react";
 import { Home, Search, ShoppingCart, User } from "lucide-react";
 import { styles } from "../styles/styles";

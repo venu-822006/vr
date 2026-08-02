@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { Check, AlertCircle, Clock, Lock, X } from "lucide-react";
 import { styles } from "../styles/styles";
 

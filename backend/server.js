@@ -11,7 +11,6 @@ import { Parser } from 'json2csv';
 import { createServer } from 'http';
 import { Server as SocketServer } from 'socket.io';
 import multer from 'multer';
-import multerS3 from 'multer-s3';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { Queue } from 'bullmq';
 import sharp from 'sharp';
@@ -70,8 +69,8 @@ pubClient.on('error', (e) => console.warn('Redis (pub) unavailable:', e.message)
 subClient.on('error', (e) => console.warn('Redis (sub) unavailable:', e.message));
 
 const cacheGet = async (key) => { try { if (!redis) return null; const v = await redis.get(key); return v ? JSON.parse(v) : null; } catch { return null; } };
-const cacheSet = async (key, val, ttl = 60) => { try { if (redis) await redis.setex(key, ttl, JSON.stringify(val)); } catch {} };
-const cacheDel = async (...keys) => { try { if (redis) await redis.del(...keys); } catch {} };
+const cacheSet = async (key, val, ttl = 60) => { try { if (redis) await redis.setex(key, ttl, JSON.stringify(val)); } catch (e) { console.warn('Cache set error:', e.message); } };
+const cacheDel = async (...keys) => { try { if (redis) await redis.del(...keys); } catch (e) { console.warn('Cache del error:', e.message); } };
 
 // Sends a push notification to every device a customer has subscribed on.
 // No-ops quietly if push isn't configured. Automatically removes
@@ -97,8 +96,6 @@ async function sendPushToPhone(phone, payload) {
 }
 
 // ─── BullMQ Queues ────────────────────────────────────────────────────────────
-const invoiceQueue = new Queue('invoiceQueue', { connection: pubClient });
-const notifyQueue = new Queue('notifyQueue', { connection: pubClient });
 
 // ─── Socket.IO ───────────────────────────────────────────────────────────────
 const io = new SocketServer(httpServer, {
@@ -682,7 +679,9 @@ app.post('/api/auth/logout', async (req, res) => {
     try {
       const payload = jwt.verify(refreshToken, JWT_REFRESH_SECRET);
       await pool.query('DELETE FROM refresh_tokens WHERE user_id=$1', [payload.id]);
-    } catch {}
+    } catch (e) {
+      console.warn('Logout token error (ignored):', e.message);
+    }
   }
   res.clearCookie('refreshToken', REFRESH_COOKIE_OPTIONS);
   res.json({ message: 'Logged out' });

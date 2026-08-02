@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { styles } from "../styles/styles";
 import { CATEGORIES } from "../data/constants";
 import { catLabel } from "../utils/helpers";

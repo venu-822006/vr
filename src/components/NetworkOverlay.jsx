@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { useState, useEffect } from "react";
 import { WifiOff, Snail } from "lucide-react";
 import { styles } from "../styles/styles";

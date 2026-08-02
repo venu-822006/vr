@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { useState, useEffect } from "react";
 import { User, Package, MapPin, Heart, Trash2, RotateCcw, ShieldCheck, Phone, LogOut, Bell, Search, Download } from "lucide-react";
 import { styles } from "../styles/styles";

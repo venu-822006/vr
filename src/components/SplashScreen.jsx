@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { useEffect } from "react";
 
 export default function SplashScreen({ onFinish }) {

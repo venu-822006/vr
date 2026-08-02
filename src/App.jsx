@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { useState, useEffect, useRef } from "react";
 import { ShoppingCart, Search, PackageOpen } from "lucide-react";
 import { io } from "socket.io-client";

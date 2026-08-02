@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { useState, useEffect, useRef, useMemo } from "react";
 import {
   LogOut, Store, Package, PlusCircle, Trash2, KeyRound,

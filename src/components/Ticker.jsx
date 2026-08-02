@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { styles } from "../styles/styles";
 import { money, pname } from "../utils/helpers";

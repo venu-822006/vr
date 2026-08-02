@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 // Frequently Bought Together - suggests products commonly bought with current cart items
 const COMBOS = {
   "Tomato": ["Onion", "Green Chillies", "Coriander Leaves"],

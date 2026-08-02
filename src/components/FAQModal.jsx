@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { X, MapPin, HelpCircle } from "lucide-react";
 import { styles } from "../styles/styles";
 

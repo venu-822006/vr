@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { useState } from "react";
 import { User, Phone, KeyRound, Eye, EyeOff, Check, X } from "lucide-react";
 import { styles } from "../styles/styles";

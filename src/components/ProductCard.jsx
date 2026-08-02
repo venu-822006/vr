@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { useState } from "react";
 import { Plus, Minus, Leaf, Ban, Heart, Bell } from "lucide-react";
 import { styles } from "../styles/styles";

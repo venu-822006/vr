@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { styles } from "../styles/styles";
 
 export default function PaymentOption({ id, icon: Icon, label, current, setPayment }) {

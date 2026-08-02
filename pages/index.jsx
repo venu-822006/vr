@@ -1,4 +1,5 @@
-﻿import React from 'react';
+/* eslint-disable no-unused-vars */
+import React from 'react';
 import App from '../src/App';
 import Head from 'next/head';
 
@@ -17,7 +18,8 @@ export default function Home({ products }) {
 export async function getServerSideProps() {
   let products = [];
   try {
-    const res = await fetch('http://127.0.0.1:5000/api/products');
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5000';
+    const res = await fetch(`${apiUrl}/api/products`);
     if (res.ok) {
       products = await res.json();
     }

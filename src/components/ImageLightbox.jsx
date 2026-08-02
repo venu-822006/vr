@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { useState, useCallback } from "react";
 import { X } from "lucide-react";
 

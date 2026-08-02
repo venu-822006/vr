@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { useState, useEffect } from "react";
 import { MapPin, Clock, CreditCard, Wallet, Banknote, ChevronRight, CheckCircle2, ChevronDown, Tag, Truck, PackageOpen } from "lucide-react";
 import { styles } from "../styles/styles";
