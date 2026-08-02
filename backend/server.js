@@ -294,21 +294,41 @@ app.patch('/api/staff/orders/:id/status', authenticateStaff, [
   param('id').isInt(),
   body('status').isIn(['pending', 'processing', 'out_for_delivery', 'delivered', 'cancelled'])
 ], validate, async (req, res) => {
-  try {
-    const { rows } = await pool.query(
-      'UPDATE orders SET status = $1 WHERE id = $2 RETURNING *',
-      [req.body.status, req.params.id]
-    );
-    if (!rows.length) return res.status(404).json({ error: 'Order not found' });
+    const { status } = req.body;
+    try {
+      const { rows: orderRows } = await pool.query('SELECT status, phone FROM orders WHERE id=$1', [req.params.id]);
+      if (!orderRows.length) return res.status(404).json({ error: 'Order not found' });
+      const oldStatus = orderRows[0].status;
 
-    // Emit live update
-    req.io.emit('orderUpdate', { id: req.params.id, status: req.body.status });
-    res.json(rows[0]);
-  } catch (e) {
-    console.error(e);
-    res.status(500).json({ error: 'Failed to update order status' });
-  }
-});
+      const { rows, rowCount } = await pool.query(
+        'UPDATE orders SET status = $1 WHERE id = $2 RETURNING *',
+        [status, req.params.id]
+      );
+      if (!rowCount) return res.status(404).json({ error: 'Order not found' });
+
+      if (status === 'cancelled' && oldStatus !== 'cancelled') {
+        const { rows: items } = await pool.query('SELECT name, qty FROM order_items WHERE order_id=$1', [req.params.id]);
+        for (const item of items) {
+          const { rows: updated } = await pool.query(
+            'UPDATE products SET stock_qty = stock_qty + $1, in_stock = CASE WHEN stock_qty + $1 > 0 THEN true ELSE in_stock END WHERE name = $2 RETURNING id, stock_qty, in_stock',
+            [item.qty, item.name]
+          );
+          if (updated.length > 0) {
+            const p = updated[0];
+            io.emit('stock_update', { id: p.id, stockQty: p.stock_qty, inStock: p.in_stock });
+          }
+        }
+      }
+
+      // Emit live update
+      io.to(`order:${req.params.id}`).emit('status_change', { orderId: req.params.id, status });
+      io.emit('orderUpdate', { id: req.params.id, status });
+      res.json(rows[0]);
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ error: 'Failed to update order status' });
+    }
+  });
 
 
 
@@ -1344,10 +1364,28 @@ app.patch('/api/orders/:id/status', authenticateOwner,
   async (req, res) => {
     const { status } = req.body;
     try {
+      const { rows: orderRows } = await pool.query('SELECT status, phone FROM orders WHERE id=$1', [req.params.id]);
+      if (!orderRows.length) return res.status(404).json({ error: 'Not found' });
+      const oldStatus = orderRows[0].status;
+
       const { rows, rowCount } = await pool.query(
         'UPDATE orders SET status=$1 WHERE id=$2 RETURNING phone', [status, req.params.id]
       );
       if (!rowCount) return res.status(404).json({ error: 'Not found' });
+
+      if (status === 'cancelled' && oldStatus !== 'cancelled') {
+        const { rows: items } = await pool.query('SELECT name, qty FROM order_items WHERE order_id=$1', [req.params.id]);
+        for (const item of items) {
+          const { rows: updated } = await pool.query(
+            'UPDATE products SET stock_qty = stock_qty + $1, in_stock = CASE WHEN stock_qty + $1 > 0 THEN true ELSE in_stock END WHERE name = $2 RETURNING id, stock_qty, in_stock',
+            [item.qty, item.name]
+          );
+          if (updated.length > 0) {
+            const p = updated[0];
+            io.emit('stock_update', { id: p.id, stockQty: p.stock_qty, inStock: p.in_stock });
+          }
+        }
+      }
 
       // Emit real-time update to customer tracking page and owner
       io.to(`order:${req.params.id}`).emit('status_change', { orderId: req.params.id, status });

@@ -11,7 +11,7 @@ import { isPushSupported, isCurrentlySubscribed, subscribeToPush, unsubscribeFro
 export default function AccountPage({
   t, lang, customer, customerRecord, allProducts,
   onUpdateName, onChangePhone, onAddAddress, onRemoveAddress,
-  onToggleFavorite, onReorder, onLogout,
+  onToggleFavorite, onReorder, onLogout, onTrackOrder
 }) {
   const [tab, setTab] = useState("profile");
 
@@ -251,12 +251,21 @@ export default function AccountPage({
                 </div>
                 <div style={styles.orderCardFooter}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 12, width: '100%' }}>
-                  <button 
-                    style={{ ...styles.secondaryBtn, flex: 1, marginRight: 8, padding: '8px', fontSize: 13 }}
-                    onClick={() => onReorder(o)}
-                  >
-                    <Search size={14} style={{ marginRight: 4 }} /> Reorder
-                  </button>
+                  {['pending', 'processing', 'out_for_delivery'].includes(o.status) ? (
+                    <button 
+                      style={{ ...styles.primaryBtn, flex: 1, marginRight: 8, padding: '8px', fontSize: 13 }}
+                      onClick={() => onTrackOrder(o.id)}
+                    >
+                      <Package size={14} style={{ marginRight: 4 }} /> Track Order
+                    </button>
+                  ) : (
+                    <button 
+                      style={{ ...styles.secondaryBtn, flex: 1, marginRight: 8, padding: '8px', fontSize: 13 }}
+                      onClick={() => onReorder(o)}
+                    >
+                      <Search size={14} style={{ marginRight: 4 }} /> Reorder
+                    </button>
+                  )}
                   <button 
                     style={{ ...styles.secondaryBtn, flex: 1, marginLeft: 8, padding: '8px', fontSize: 13 }}
                     onClick={() => window.open(`/api/orders/${o.id}/invoice`, '_blank')}

@@ -44,12 +44,13 @@ const interpolate = (start, end, progress) => {
   ];
 };
 
-export default function Tracking({ t, lang, orderId, area, town, slot, total, cartItems, onNewOrder, socket }) {
+export default function Tracking({ t, lang, orderId, area, town, slot, total, cartItems, onNewOrder, socket, allProducts = [] }) {
   const [status, setStatus] = useState("pending");
   const [loading, setLoading] = useState(true);
   const [isOfflineMode, setIsOfflineMode] = useState(false);
   const [riderLoc, setRiderLoc] = useState(STORE_LOC);
   const [eta, setEta] = useState(15); // ETA in mins
+  const [orderDetails, setOrderDetails] = useState(null);
 
   // Initial fetch
   const fetchStatus = useCallback(async () => {
@@ -59,6 +60,7 @@ export default function Tracking({ t, lang, orderId, area, town, slot, total, ca
       if (res.ok) {
         const data = await res.json();
         setStatus(data.status);
+        setOrderDetails(data);
       } else {
         throw new Error("Backend offline");
       }
@@ -207,7 +209,7 @@ export default function Tracking({ t, lang, orderId, area, town, slot, total, ca
             <p style={{ margin: "4px 0 0", color: "var(--ink-soft)", fontSize: 14 }}>{t.orderNo} #{orderId}</p>
           </div>
           <div style={{ textAlign: "right" }}>
-            <span style={{ fontSize: 20, fontWeight: 700, color: "var(--primary)" }}>{money(total)}</span>
+            <span style={{ fontSize: 20, fontWeight: 700, color: "var(--primary)" }}>{money(orderDetails?.total || total)}</span>
           </div>
         </div>
 
@@ -259,7 +261,10 @@ export default function Tracking({ t, lang, orderId, area, town, slot, total, ca
             {/* Order summary */}
             <h3 style={{ fontSize: 16, marginBottom: 12, borderBottom: "1px solid var(--border)", paddingBottom: 8 }}>Order Details</h3>
             <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 20 }}>
-              {cartItems.map(i => (
+              {(orderDetails?.items ? orderDetails.items.map((i, idx) => {
+                const product = allProducts.find(p => p.name === i.name) || { name: i.name, te: i.name, emoji: "📦", unit: "" };
+                return { key: idx, product, qty: i.qty };
+              }) : cartItems || []).map(i => (
                 <div key={i.key} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <span style={{ fontSize: 15, fontWeight: 500 }}>{i.product.emoji} {pname(i.product, lang)}</span>
                   <span style={{ fontSize: 14, color: "var(--ink-soft)", fontWeight: 600 }}>{i.qty}{i.product.unit === "kg" ? "kg" : ""}</span>
@@ -268,7 +273,7 @@ export default function Tracking({ t, lang, orderId, area, town, slot, total, ca
             </div>
 
             <p style={{ fontSize: 14, color: "var(--ink-soft)", margin: "0 0 24px", display: "flex", alignItems: "center", gap: 6, backgroundColor: "var(--bg)", padding: 12, borderRadius: 10 }}>
-              <MapPin size={16} color="var(--primary)" /> {area}, {townLabel(town, lang)}
+              <MapPin size={16} color="var(--primary)" /> {orderDetails?.area || area}, {townLabel(orderDetails?.town || town, lang)}
             </p>
 
             {/* Action buttons */}

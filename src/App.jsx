@@ -723,6 +723,10 @@ export default function App({ initialProducts = [] }) {
               onToggleFavorite={handleToggleFavorite}
               onReorder={handleReorder}
               onLogout={handleLogout}
+              onTrackOrder={(id) => {
+                setOrderId(id);
+                setView("tracking");
+              }}
             />
           )}
 
@@ -753,6 +757,7 @@ export default function App({ initialProducts = [] }) {
               cartItems={lastOrderItems}
               onNewOrder={resetToShopping}
               socket={socketRef.current}
+              allProducts={allProducts}
             />
           )}
 
